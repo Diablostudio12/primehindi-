@@ -1,0 +1,1 @@
+import express from 'express';import path from 'path';import{fileURLToPath}from'url';const app=express(),d=path.dirname(fileURLToPath(import.meta.url));app.use(express.static(d));app.listen(process.env.PORT||3000,'0.0.0.0');
