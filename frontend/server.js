@@ -6,8 +6,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const app = express();
 const port = process.env.PORT || 3000;
-// Primordial Streams clean frontend deployment
-const backendUrl = process.env.BACKEND_URL || "https://primordial-streaming-backend-production.up.railway.app";
+const backendUrl =
+  process.env.BACKEND_URL ||
+  "https://primordial-streaming-backend-production.up.railway.app";
 
 app.use("/api", async (req, res) => {
   try {
@@ -45,7 +46,13 @@ app.use("/api", async (req, res) => {
   }
 });
 
-app.use(express.static(__dirname));
+// Explicit admin route so Railway always serves the admin page directly.
+app.get(["/admin", "/admin.html"], (req, res) => {
+  res.set("Cache-Control", "no-store");
+  res.sendFile(path.join(__dirname, "admin.html"));
+});
+
+app.use(express.static(__dirname, { extensions: ["html"] }));
 app.use((req, res) => res.sendFile(path.join(__dirname, "index.html")));
 
 app.listen(port, "0.0.0.0", () => {
