@@ -45,7 +45,7 @@ app.use("/api", async (req, res) => {
 });
 
 app.use(express.static(__dirname));
-app.get("*", (req, res) => res.sendFile(path.join(__dirname, "index.html")));
+app.use((req, res) => res.sendFile(path.join(__dirname, "index.html")));
 
 app.listen(port, "0.0.0.0", () => {
   console.log("Primordial Streams running on " + port);
