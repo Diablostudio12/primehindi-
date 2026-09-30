@@ -6,6 +6,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const app = express();
 const port = process.env.PORT || 3000;
+// Primordial Streams clean frontend deployment
 const backendUrl = process.env.BACKEND_URL || "https://primordial-streaming-backend-production.up.railway.app";
 
 app.use("/api", async (req, res) => {
