@@ -58,7 +58,22 @@ footer{border-top:1px solid var(--ln);background:var(--cd);padding:32px 18px 24p
 footer{position:relative;overflow:hidden}footer:before{content:"";position:absolute;right:-70px;bottom:-30px;width:340px;height:400px;background:radial-gradient(closest-side,rgba(0,190,220,.32),transparent)}
 .fnp{position:absolute;right:-14px;bottom:0;height:390px;filter:drop-shadow(0 0 36px rgba(0,190,255,.35))}
 footer .fi>div{position:relative;z-index:1;max-width:60%}
-@media(min-width:800px){footer .fi>div{max-width:none}.fi{padding-right:280px}.fnp{right:4%;height:440px}footer:before{right:calc(4% - 40px)}</style></head><body>
+@media(min-width:800px){footer .fi>div{max-width:none}.fi{padding-right:280px}.fnp{right:4%;height:440px}footer:before{right:calc(4% - 40px)}
+/* Header branding: larger logo with no clipping */
+header .lg{width:clamp(120px,18vw,196px)!important;max-width:none!important;flex:0 0 auto!important;overflow:visible!important;min-width:0}
+header .lg img{display:block;width:100%!important;height:56px!important;max-width:none!important;object-fit:contain!important;object-position:left center!important;transform:none!important}
+@media(max-width:600px){
+  header{gap:clamp(4px,1.2vw,8px)}
+  header .lg{width:clamp(100px,29vw,142px)!important;max-width:none!important;flex:0 0 auto!important;overflow:visible!important}
+  header .lg img{height:48px!important;width:100%!important;object-fit:contain!important;object-position:left center!important}
+  header .sp{flex:1 1 0;min-width:0}
+}
+@media(max-width:390px){
+  header .lg{width:clamp(96px,29vw,118px)!important;flex-basis:clamp(96px,29vw,118px)!important;max-width:none!important}
+  header .lg img{height:44px!important}
+}
+
+</style></head><body>
 <header><a href="#/" class="lg" aria-label="Primordial Streams home"><img class="lgi" alt="Primordial Streams logo"></a>
 <nav><a href="#/">Home</a><a href="#/genres">Genres</a><a href="#/schedule">Schedule</a><a href="#/watchlist">Watchlist</a></nav><span class="sp"></span>
 <a class="ib" href="#/search" aria-label="Search"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></a>
