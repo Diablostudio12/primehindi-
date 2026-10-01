@@ -18,6 +18,14 @@ CREATE TABLE IF NOT EXISTS watchlist(user_id INT REFERENCES users(id) ON DELETE 
 CREATE TABLE IF NOT EXISTS progress(user_id INT REFERENCES users(id) ON DELETE CASCADE,episode_id INT REFERENCES episodes(id) ON DELETE CASCADE,seconds INT DEFAULT 0,updated_at TIMESTAMPTZ DEFAULT now(),PRIMARY KEY(user_id,episode_id));
 CREATE TABLE IF NOT EXISTS branding(id INT PRIMARY KEY DEFAULT 1,logo_url TEXT DEFAULT '',updated_at TIMESTAMPTZ DEFAULT now());
 INSERT INTO branding(id,logo_url) VALUES(1,'/assets/logo.jpg') ON CONFLICT(id) DO NOTHING;`);
+const legacyCatalog = [["Dragon's Oath","Fantasy",24,9.2,"#f59e0b","#7c2d12",2022,"completed"],["Midnight Case","Mystery",12,8.9,"#38bdf8","#0f172a",2023,"ongoing"],["Sparkle Stage","Music",13,8.7,"#ec4899","#4c1d95",2024,"ongoing"],["Shadow Ninja","Action",26,8.8,"#6366f1","#0b1020",2025,"ongoing"],["Royal Hearts","Romance",12,8.5,"#f472b6","#581c87",2026,"ongoing"],["Titan Fall","Sci-Fi",25,8.6,"#fb923c","#1e3a8a",2022,"ongoing"],["Tea Time","Slice of Life",12,8.1,"#a16207","#292524",2023,"ongoing"],["Glimmer Woods","Fantasy",13,8.3,"#34d399","#064e3b",2024,"ongoing"],["Ring King","Sports",24,8.4,"#3b82f6","#7f1d1d",2025,"ongoing"],["Crimson Lord","Horror",12,8.7,"#dc2626","#1c0a0a",2026,"ongoing"],["Unit Seven","Sci-Fi",12,8.2,"#2dd4bf","#134e4a",2022,"ongoing"],["Sun Spike","Sports",13,8,"#fbbf24","#0369a1",2023,"ongoing"],["Neon Protocol","Sci-Fi",13,8.9,"#22d3ee","#581c87",2024,"ongoing"],["Starlight Academy","Fantasy",12,8.6,"#c084fc","#1e1b4b",2025,"ongoing"],["Tower of Spells","Fantasy",20,8.5,"#f59e0b","#312e81",2026,"ongoing"]];
+for (const [title, genre, legacyEpisodes, rating, colorA, colorB, year, status] of legacyCatalog) {
+  const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  await pool.query(
+    "INSERT INTO anime(title,alt_title,slug,description,poster_url,banner_url,year,genres,rating,type,status,hindi_dub,subtitles,is_exclusive,characters) VALUES($1,'',$2,$3,'','',$4,$5,$6,'series',$7,false,true,false,$8::jsonb) ON CONFLICT(slug) DO NOTHING",
+    [title, slug, "Anime details can be updated from the Admin Portal.", year, [genre], rating, status, JSON.stringify({legacyEpisodes, colorA, colorB})]
+  );
+}
 if(process.env.ADMIN_EMAIL&&process.env.ADMIN_PASSWORD){const h=await bcrypt.hash(process.env.ADMIN_PASSWORD,12);await pool.query('insert into users(display_name,email,password_hash,role) values($1,$2,$3,$4) on conflict(email) do update set display_name=$1,password_hash=$3,role=$4',['PDI Admin',process.env.ADMIN_EMAIL.toLowerCase(),h,'admin'])}}
 function token(u){return jwt.sign({id:u.id,role:u.role},JWT_SECRET,{expiresIn:'7d'})}
 function auth(req,res,next){try{req.user=jwt.verify((req.headers.authorization||'').replace(/^Bearer /,''),JWT_SECRET);next()}catch{return res.status(401).json({error:'Unauthorized'})}}
