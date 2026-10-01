@@ -49,7 +49,7 @@ app.use("/api", async (req, res) => {
 // Explicit admin route so Railway always serves the admin page directly.
 app.get(["/admin", "/admin.html"], (req, res) => {
   res.set("Cache-Control", "no-store");
-  res.sendFile(path.join(__dirname, "admin.html"));
+  res.sendFile(path.join(__dirname, "admin-portal.html"));
 });
 
 app.use(express.static(__dirname, { extensions: ["html"] }));
