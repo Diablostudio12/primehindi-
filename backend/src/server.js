@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS watchlist(user_id INT REFERENCES users(id) ON DELETE 
 CREATE TABLE IF NOT EXISTS progress(user_id INT REFERENCES users(id) ON DELETE CASCADE,episode_id INT REFERENCES episodes(id) ON DELETE CASCADE,seconds INT DEFAULT 0,updated_at TIMESTAMPTZ DEFAULT now(),PRIMARY KEY(user_id,episode_id));
 CREATE TABLE IF NOT EXISTS branding(id INT PRIMARY KEY DEFAULT 1,logo_url TEXT DEFAULT '',updated_at TIMESTAMPTZ DEFAULT now());
 INSERT INTO branding(id,logo_url) VALUES(1,'/assets/logo.jpg') ON CONFLICT(id) DO NOTHING;`);
-if(process.env.ADMIN_EMAIL&&process.env.ADMIN_PASSWORD){const h=await bcrypt.hash(process.env.ADMIN_PASSWORD,12);await pool.query('insert into users(display_name,email,password_hash,role) values($1,$2,$3,$4) on conflict(email) do update set role=$4',['PDI Admin',process.env.ADMIN_EMAIL.toLowerCase(),h,'admin'])}}
+if(process.env.ADMIN_EMAIL&&process.env.ADMIN_PASSWORD){const h=await bcrypt.hash(process.env.ADMIN_PASSWORD,12);await pool.query('insert into users(display_name,email,password_hash,role) values($1,$2,$3,$4) on conflict(email) do update set display_name=$1,password_hash=$3,role=$4',['PDI Admin',process.env.ADMIN_EMAIL.toLowerCase(),h,'admin'])}}
 function token(u){return jwt.sign({id:u.id,role:u.role},JWT_SECRET,{expiresIn:'7d'})}
 function auth(req,res,next){try{req.user=jwt.verify((req.headers.authorization||'').replace(/^Bearer /,''),JWT_SECRET);next()}catch{return res.status(401).json({error:'Unauthorized'})}}
 function admin(req,res,next){return auth(req,res,()=>req.user.role==='admin'?next():res.status(403).json({error:'Admin only'}))}
