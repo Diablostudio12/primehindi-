@@ -80,6 +80,16 @@ header .lg img{display:block;width:100%!important;height:56px!important;max-widt
   header .lg img{height:44px!important}
 }
 
+
+/* Five-poster hero carousel with a smooth 400ms crossfade */
+#hero{position:relative;min-height:440px;margin:0 -18px 8px;overflow:hidden;border-radius:0 0 20px 20px;isolation:isolate}
+#hero>.hero-slide{position:absolute;inset:0;width:100%;height:100%;min-height:440px;margin:0;border-radius:inherit;opacity:0;transition:opacity 400ms ease;pointer-events:none}
+#hero>.hero-slide.is-active{opacity:1;pointer-events:auto}
+#hero>.hero-slide:after{pointer-events:none}
+#hero .dots{position:relative;z-index:5}
+#hero .dots button{height:4px;transition:background-color 400ms ease,opacity 400ms ease}
+@media(min-width:800px){#hero{min-height:520px;margin:0 0 8px;border-radius:20px}#hero>.hero-slide{min-height:520px}}
+@media(prefers-reduced-motion:reduce){#hero>.hero-slide{transition:none}}
 </style></head><body>
 <header><a href="#/" class="lg" aria-label="Primordial Streams home"><img class="lgi" alt="Primordial Streams logo"></a>
 <nav><a href="#/">Home</a><a href="#/genres">Genres</a><a href="#/schedule">Schedule</a><a href="#/watchlist">Watchlist</a></nav><span class="sp"></span>
@@ -108,7 +118,7 @@ const lw=(a,e)=>`<a class="cd" href="#/watch/${a.i}/${e.episodeNumber??e.episode
 const rib=l=>`<div class="rib">${l.map(cd).join('')}</div>`,grid=l=>`<div class="gr">${l.map(cd).join('')}</div>`;
 const sec=(t,x)=>`<section><div class="sh"><h2>${t}</h2><a href="#/search">View all</a></div>${x}</section>`;
 const eps=(a,cur)=>{const list=Array.isArray(a.episodes)?a.episodes:[];return list.length?list.map(e=>{const n=Number(e.episodeNumber??e.episode_number)||1;return `<a href="#/watch/${a.i}/${n}" class="ep-r${n==cur?' on':''}"><span>${e.title||'Episode '+n}</span><small>${e.duration||''}</small></a>`}).join(''):'<p class="mu">No episodes added yet.</p>'};
-const hero=k=>{const a=A[k];return `<div class="hero" ${st(a)} data-banner="${(a.bannerUrl||a.posterUrl||'').replace(/"/g,'%22')}"><b>${a.t[0]}</b><div><span class="tag">#${k+1} Trending</span><h1>${a.t}</h1><p>${a.description||SY}</p><a class="btn" href="#/watch/${a.i}/1">&#9654; Watch now</a> <a class="btn g" href="#/anime/${a.i}">Details</a><div class="dots">${[0,1,2].map(i=>`<button data-h="${i}" aria-label="Slide ${i+1}" class="${i==k?'on':''}"></button>`).join('')}</div></div></div>`};
+const hero=k=>{const a=A[k];return `<div class="hero hero-slide ${k===0?'is-active':''}" data-slide-index="${k}" ${st(a)} data-banner="${(a.bannerUrl||a.posterUrl||'').replace(/"/g,'%22')}"><b>${a.t[0]}</b><div><span class="tag">#${k+1} Trending</span><h1>${a.t}</h1><p>${a.description||SY}</p><a class="btn" href="#/watch/${a.i}/1">&#9654; Watch now</a> <a class="btn g" href="#/anime/${a.i}">Details</a><div class="dots">${Array.from({length:Math.min(5,A.length)},(_,i)=>`<button data-h="${i}" aria-label="Slide ${i+1}" class="${i==k?'on':''}"></button>`).join('')}</div></div></div>`};
 const DAYS=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
 const sch=d=>[0,1,2,3].map(k=>{const a=A[(d*2+k*3)%15];return `<a class="sr" href="#/anime/${a.i}"><b>${['09:30','12:00','17:30','21:00'][k]}</b><i class="sq" ${st(a)}></i><div><p>${a.t}</p><small>Episode ${d+k+4}</small></div></a>`}).join('');
 const au=(t,f,alt,lk,ok)=>`<div class="au"><img class="lgi" alt=""><h1>${t}</h1><form data-ok="${ok}">${f}<button class="btn">${t}</button></form><div class="googleBox"><button class="btn g" type="button" id="googleSignIn">Continue with Google</button><small id="googleHelp" class="mu"></small></div><small>${alt} <a href="#/${lk[0]}">${lk[1]}</a></small></div>`;
@@ -132,7 +142,7 @@ function toast(m){ts.textContent=m;ts.classList.add('on');clearTimeout(toast.t);
 function wire(){
 const all=s=>document.querySelectorAll(s);initStreamPlayers();initCustomPlayerUI();
 all('.lgi').forEach(i=>{if(!i.dataset.brandLoaded&&!i.dataset.brandFallback){i.src=IC;i.dataset.brandFallback='1'}});all('.npi').forEach(i=>i.src=NP);all('[data-banner]').forEach(el=>{const u=el.dataset.banner;if(u)el.style.backgroundImage=`linear-gradient(to top,var(--bg) 4%,rgba(10,13,20,.35) 60%,transparent),url("${u}")`;if(u){el.style.backgroundSize='cover';el.style.backgroundPosition='center';}});
-all('[data-h]').forEach(b=>b.onclick=()=>{$('#hero').innerHTML=hero(+b.dataset.h);wire()});
+all('[data-h]').forEach(b=>b.onclick=()=>showHeroSlide(+b.dataset.h));
 all('[data-g] .chip').forEach(b=>b.onclick=()=>{b.parentNode.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));b.classList.add('on');
 if(b.dataset.d!=null)$('#sl').innerHTML=sch(+b.dataset.d);
 if(b.dataset.p!=null){$('#p0').hidden=b.dataset.p!='0';$('#p1').hidden=b.dataset.p!='1'}});
@@ -147,5 +157,5 @@ all('form').forEach(f=>f.onsubmit=async e=>{e.preventDefault();const p=[...f.que
 function syncAccountButton(){const btn=$('#accountBtn');if(!btn)return;const token=localStorage.getItem('pdi_stream_token');let u={};try{u=JSON.parse(localStorage.getItem('pdi_stream_user')||'{}')}catch{}if(token){btn.href='#/profile';btn.textContent=u.display_name||u.displayName||'My Profile';btn.classList.add('account-signed-in')}else{btn.href='#/signin';btn.textContent='Sign in';btn.classList.remove('account-signed-in')}}
 function route(){const h=location.hash.replace(/^#\/?/,'').split('/'),r=h[0]||'home';syncAccountButton();document.body.classList.remove('mo');if($('#mb')){$('#mb').innerHTML='&#9776;';$('#mb').setAttribute('aria-label','Menu')}app.innerHTML=(V[r]||V.home)(decodeURIComponent(h[1]||''),h[2]);scrollTo(0,0);wire();if(r==='home')startHeroSlider()}
 async function loadBrandLogo(){try{const r=await fetch('/api/branding',{cache:'no-store'});if(!r.ok)return;const d=await r.json();if(d.logoUrl)document.querySelectorAll('.lgi,#fl').forEach(i=>{i.dataset.brandLoaded='1';i.dataset.brandFallback='';i.src=d.logoUrl;i.onerror=()=>{i.onerror=null;i.dataset.brandLoaded='';i.dataset.brandFallback='1';i.src=IC}})}catch(e){console.warn('Brand logo unavailable',e)}}$('#fl').src=FL;loadBrandLogo();$('#mb').onclick=()=>{const open=!document.body.classList.contains('mo');document.body.classList.toggle('mo',open);$('#mb').innerHTML=open?'&#10005;':'&#9776;';$('#mb').setAttribute('aria-label',open?'Close menu':'Menu')};$('#ov').onclick=()=>{document.body.classList.remove('mo');$('#mb').innerHTML='&#9776;';$('#mb').setAttribute('aria-label','Menu')};
-let heroTimer=null;function startHeroSlider(){if(heroTimer)clearInterval(heroTimer);heroTimer=setInterval(()=>{const node=$('#hero');if(!node)return;const current=node.querySelector('[data-h].on');const k=current?Number(current.dataset.h):0;node.innerHTML=hero((k+1)%Math.min(3,A.length));wire()},5500)}addEventListener('hashchange',route);route();loadCatalog();loadBrandLogo();
+let heroTimer=null;let heroTransition=false;function showHeroSlide(index){const node=$('#hero');if(!node||heroTransition||!A.length)return;const count=Math.min(5,A.length);const nextIndex=((index%count)+count)%count;const current=node.querySelector('.hero-slide.is-active');if(current&&Number(current.dataset.slideIndex)===nextIndex)return;heroTransition=true;const next=document.createElement('div');next.innerHTML=hero(nextIndex);const incoming=next.firstElementChild;incoming.classList.remove('is-active');node.appendChild(incoming);wire();void incoming.offsetWidth;if(current)current.classList.remove('is-active');incoming.classList.add('is-active');node.querySelectorAll('[data-h]').forEach(dot=>dot.classList.toggle('on',Number(dot.dataset.h)===nextIndex));setTimeout(()=>{if(current)current.remove();heroTransition=false},420)}function startHeroSlider(){if(heroTimer)clearInterval(heroTimer);if(A.length<2)return;heroTimer=setInterval(()=>{const node=$('#hero');if(!node)return;const current=node.querySelector('.hero-slide.is-active');const k=current?Number(current.dataset.slideIndex):0;showHeroSlide((k+1)%Math.min(5,A.length))},5500)}addEventListener('hashchange',route);route();loadCatalog();loadBrandLogo();
 </script></body></html>
