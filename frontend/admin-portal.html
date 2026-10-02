@@ -62,6 +62,23 @@ main{min-width:0;padding:28px clamp(15px,3vw,38px) 60px}.topbar{display:flex;ali
 <div id="modal" class="modal hidden" role="dialog" aria-modal="true"><div class="modalBox"><div class="modalHead"><h2 id="modalTitle">Edit item</h2><button class="xbtn" onclick="closeModal()">✕</button></div><div id="modalBody"></div></div></div>
 <div id="toast" class="toast hidden" role="status"></div>
 <script>
+/* Keep admin login failures visible instead of silently reloading the page. */
+window.__pdiAdminLoginReady = false;
+window.addEventListener("error", function(event) {
+  var box = document.getElementById("loginError");
+  if (box && event && event.message) {
+    box.textContent = "Admin page script error: " + event.message;
+  }
+});
+document.addEventListener("submit", function(event) {
+  if (event.target && event.target.id === "loginForm" && !window.__pdiAdminLoginReady) {
+    event.preventDefault();
+    var box = document.getElementById("loginError");
+    if (box) box.textContent = "Admin login script did not start correctly. Please refresh this page; if this message remains, send a screenshot.";
+  }
+}, true);
+</script>
+<script>
 (function(){
 "use strict";
 const API="/api", TOKEN_KEY="ps_admin_token";
@@ -77,6 +94,7 @@ function showLogin(){ $("loginScreen").classList.remove("hidden");$("app").class
 function showApp(){ $("loginScreen").classList.add("hidden");$("app").classList.remove("hidden") }
 function logout(showMessage){token="";sessionStorage.removeItem(TOKEN_KEY);showLogin();if(showMessage)toast("Signed out successfully")}
 $("loginForm").addEventListener("submit",async e=>{e.preventDefault();$("loginError").textContent="";$("loginBtn").disabled=true;$("loginBtn").textContent="Signing in…";try{const data=await apiLogin({email:$("email").value.trim(),password:$("password").value,mfaCode:$("mfaCode").value.trim()});if(!data.user||data.user.role!=="admin")throw new Error("This account is not an administrator.");if(!data.token)throw new Error("Login response did not include a session token. Please try again.");token=data.token;sessionStorage.setItem(TOKEN_KEY,token);$("adminIdentity").textContent="Signed in: "+(data.user.email||data.user.display_name||"admin");await loadAll();showApp();toast("Welcome to the admin portal")}catch(err){token="";sessionStorage.removeItem(TOKEN_KEY);showLogin();$("loginError").textContent=err.message||"Sign in failed";}finally{$("loginBtn").disabled=false;$("loginBtn").textContent="Sign in securely →"}});
+window.__pdiAdminLoginReady = true;
 async function apiLogin(body){const r=await fetch(API+"/auth/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||"Unable to sign in");return d}
 $("logoutBtn").addEventListener("click",()=>logout(true));$("refreshBtn").addEventListener("click",()=>loadAll(true).catch(e=>toast(e.message,true)));$("menuBtn").addEventListener("click",()=>$("sidebar").classList.toggle("open"));
 document.querySelectorAll("[data-tab]").forEach(b=>b.addEventListener("click",()=>switchTab(b.dataset.tab)));
