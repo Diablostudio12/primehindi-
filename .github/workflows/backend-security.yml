@@ -1,0 +1,34 @@
+name: Backend security checks
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-security.yml"
+  pull_request:
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-security.yml"
+
+jobs:
+  backend-checks:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package.json
+      - name: Install dependencies
+        run: npm install
+      - name: Check server syntax
+        run: node --check src/server.js
+      - name: Run security regression tests
+        run: npm test
