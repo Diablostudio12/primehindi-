@@ -4,10 +4,43 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import pg from 'pg';
 import crypto from 'node:crypto';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 const {Pool}=pg; const app=express();
-app.use(cors({origin:true,credentials:true})); app.use(express.json({limit:'20mb'}));
+const allowedOrigins = new Set(
+  (process.env.FRONTEND_URL || 'https://primordialstreams.up.railway.app')
+    .split(',').map((value) => value.trim()).filter(Boolean)
+);
+allowedOrigins.add('https://primordialstreams.up.railway.app');
+app.disable('x-powered-by');
+app.set('trust proxy', 1);
+app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
+app.use(cors({
+  origin(origin, callback) {
+    if (!origin || allowedOrigins.has(origin)) return callback(null, true);
+    return callback(new Error('Origin not allowed by CORS'));
+  },
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: false,
+  maxAge: 600
+}));
+app.use(express.json({limit:'8mb', strict:true}));
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, limit: 600, standardHeaders: 'draft-8', legacyHeaders: false,
+  message: { error: 'Too many requests. Please try again later.' }
+});
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, limit: 20, standardHeaders: 'draft-8', legacyHeaders: false,
+  message: { error: 'Too many authentication attempts. Please try again in 15 minutes.' }
+});
+app.use('/api', apiLimiter);
+app.use(['/api/auth/login', '/api/auth/register', '/api/auth/google'], authLimiter);
 const pool=new Pool({connectionString:process.env.DATABASE_URL,ssl:process.env.DATABASE_SSL==='true'?{rejectUnauthorized:false}:false});
-const JWT_SECRET=process.env.JWT_SECRET||'change-me';
+const JWT_SECRET=process.env.JWT_SECRET;
+if (!JWT_SECRET || JWT_SECRET.length < 32 || JWT_SECRET === 'change-me') {
+  throw new Error('JWT_SECRET must be configured with a random secret of at least 32 characters.');
+}
 async function init(){await pool.query(`
 CREATE TABLE IF NOT EXISTS users(id SERIAL PRIMARY KEY,display_name TEXT NOT NULL,email TEXT UNIQUE NOT NULL,password_hash TEXT NOT NULL,role TEXT NOT NULL DEFAULT 'user',created_at TIMESTAMPTZ DEFAULT now());
 CREATE TABLE IF NOT EXISTS anime(id SERIAL PRIMARY KEY,title TEXT NOT NULL,alt_title TEXT DEFAULT '',slug TEXT UNIQUE NOT NULL,description TEXT DEFAULT '',poster_url TEXT DEFAULT '',banner_url TEXT DEFAULT '',year INT,genres TEXT[] DEFAULT '{}',rating NUMERIC(3,1),type TEXT DEFAULT 'series',status TEXT DEFAULT 'ongoing',hindi_dub BOOLEAN DEFAULT false,subtitles BOOLEAN DEFAULT true,is_exclusive BOOLEAN DEFAULT false,characters JSONB DEFAULT '[]'::jsonb,created_at TIMESTAMPTZ DEFAULT now());
@@ -35,7 +68,7 @@ function auth(req,res,next){try{req.user=jwt.verify((req.headers.authorization||
 function admin(req,res,next){return auth(req,res,()=>req.user.role==='admin'?next():res.status(403).json({error:'Admin only'}))}
 app.get('/api/health',async(req,res)=>{try{await pool.query('select 1');res.json({ok:true})}catch{res.status(503).json({ok:false})}});
 app.post('/api/auth/register',async(req,res)=>{const{displayName,email,password}=req.body;if(!displayName||!email||!password)return res.status(400).json({error:'Missing fields'});try{const h=await bcrypt.hash(password,12);const{rows}=await pool.query('insert into users(display_name,email,password_hash) values($1,$2,$3) returning id,display_name,email,role,created_at',[displayName,email.toLowerCase(),h]);res.status(201).json({token:token(rows[0]),user:rows[0]})}catch{res.status(409).json({error:'Email already registered'})}});
-app.post('/api/auth/login',async(req,res)=>{const{email,password,mfaCode}=req.body;const{rows}=await pool.query('select * from users where email=$1',[String(email||'').toLowerCase()]);if(!rows[0]||!(await bcrypt.compare(password||'',rows[0].password_hash)))return res.status(401).json({error:'Invalid credentials'});if(rows[0].role==='admin'&&process.env.ADMIN_MFA_CODE&&String(mfaCode||'')!==String(process.env.ADMIN_MFA_CODE))return res.status(401).json({error:'Invalid MFA / Security Passcode'});const u=rows[0];delete u.password_hash;res.json({token:token(u),user:u})});
+app.post('/api/auth/login',async(req,res)=>{const{email,password,mfaCode}=req.body;const{rows}=await pool.query('select * from users where email=$1',[String(email||'').toLowerCase()]);if(!rows[0]||!(await bcrypt.compare(password||'',rows[0].password_hash)))return res.status(401).json({error:'Invalid credentials'});if(rows[0].role==='admin'&&!process.env.ADMIN_MFA_CODE)return res.status(503).json({error:'Admin MFA is not configured. Contact the site administrator.'});if(rows[0].role==='admin'&&String(mfaCode||'')!==String(process.env.ADMIN_MFA_CODE))return res.status(401).json({error:'Invalid MFA / Security Passcode'});const u=rows[0];delete u.password_hash;res.json({token:token(u),user:u})});
 app.get('/api/auth/google/config',(req,res)=>res.json({clientId:process.env.GOOGLE_CLIENT_ID||''}));
 app.post('/api/auth/google',async(req,res)=>{try{const credential=String(req.body.credential||'');if(!process.env.GOOGLE_CLIENT_ID)return res.status(503).json({error:'Google OAuth Client ID is not configured on the server'});if(!credential)return res.status(400).json({error:'Missing Google credential'});const verify=await fetch('https://oauth2.googleapis.com/tokeninfo?id_token='+encodeURIComponent(credential));if(!verify.ok)return res.status(401).json({error:'Google credential could not be verified'});const g=await verify.json();if(g.aud!==process.env.GOOGLE_CLIENT_ID||g.email_verified!=='true'||!g.email)return res.status(401).json({error:'Google account verification failed'});const email=g.email.toLowerCase(),displayName=g.name||g.given_name||email.split('@')[0],avatar=g.picture||'';const hash=await bcrypt.hash(crypto.randomUUID(),12);const result=await pool.query("insert into users(display_name,email,password_hash,avatar_url) values($1,$2,$3,$4) on conflict(email) do update set display_name=excluded.display_name,avatar_url=case when excluded.avatar_url<>'' then excluded.avatar_url else users.avatar_url end returning id,display_name,email,role,created_at,avatar_url",[displayName,email,hash,avatar]);res.json({token:token(result.rows[0]),user:result.rows[0]})}catch(e){console.error('Google sign-in failed',e);res.status(500).json({error:'Google sign-in failed. Please try again.'})}});
 app.get('/api/me',auth,async(req,res)=>{const{rows}=await pool.query('select id,display_name,email,role,created_at,avatar_url from users where id=$1',[req.user.id]);res.json(rows[0])});
@@ -62,4 +95,11 @@ app.post('/api/watchlist/:animeId',auth,async(req,res)=>{await pool.query('inser
 app.delete('/api/watchlist/:animeId',auth,async(req,res)=>{await pool.query('delete from watchlist where user_id=$1 and anime_id=$2',[req.user.id,req.params.animeId]);res.sendStatus(204)});
 app.get('/api/progress',auth,async(req,res)=>{const{rows}=await pool.query('select * from progress where user_id=$1',[req.user.id]);res.json(rows)});
 app.put('/api/progress/:episodeId',auth,async(req,res)=>{const seconds=Math.max(0,Number(req.body.seconds)||0);const{rows}=await pool.query('insert into progress(user_id,episode_id,seconds) values($1,$2,$3) on conflict(user_id,episode_id) do update set seconds=$3,updated_at=now() returning *',[req.user.id,req.params.episodeId,seconds]);res.json(rows[0])});
-init().then(()=>app.listen(process.env.PORT||3000,'0.0.0.0')).catch(e=>{console.error(e);process.exit(1)});
+app.use((err, req, res, next) => {
+  if (res.headersSent) return next(err);
+  if (err?.message === 'Origin not allowed by CORS') return res.status(403).json({error:'Origin not allowed'});
+  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) return res.status(400).json({error:'Invalid JSON body'});
+  console.error('Unhandled request error', { path: req.path, method: req.method, message: err?.message || 'Unknown error' });
+  return res.status(500).json({error:'Internal server error'});
+});
+init().then(()=>app.listen(process.env.PORT||3000,'0.0.0.0')).catch(e=>{console.error('Startup failed',e);process.exit(1)});
