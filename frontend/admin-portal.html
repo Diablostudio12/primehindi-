@@ -62,14 +62,21 @@ main{min-width:0;padding:28px clamp(15px,3vw,38px) 60px}.topbar{display:flex;ali
 <div id="modal" class="modal hidden" role="dialog" aria-modal="true"><div class="modalBox"><div class="modalHead"><h2 id="modalTitle">Edit item</h2><button class="xbtn" onclick="closeModal()">✕</button></div><div id="modalBody"></div></div></div>
 <div id="toast" class="toast hidden" role="status"></div>
 <script>
-/* Login is handled by the single form listener below, which validates admin role and loads the dashboard without a forced page reload. */
-document.addEventListener("submit", function(event) {
-  if (event.target && event.target.id === "loginForm" && !window.__pdiAdminLoginReady) {
-    event.preventDefault();
-    var box = document.getElementById("loginError");
-    if (box) box.textContent = "Admin login script did not start correctly. Please refresh this page; if this message remains, send a screenshot.";
+/* Surface the actual startup error on the login screen instead of trapping every submit behind a generic message. */
+window.addEventListener("error", function(event) {
+  var box = document.getElementById("loginError");
+  if (box && !window.__pdiAdminLoginReady) {
+    box.textContent = "Admin script error: " + (event.message || "startup failed") +
+      (event.lineno ? " (line " + event.lineno + ")" : "");
   }
-}, true);
+});
+window.addEventListener("unhandledrejection", function(event) {
+  var box = document.getElementById("loginError");
+  if (box && !window.__pdiAdminLoginReady) {
+    var reason = event.reason;
+    box.textContent = "Admin startup error: " + (reason && reason.message ? reason.message : String(reason || "unknown error"));
+  }
+});
 </script>
 <script>
 (function(){
