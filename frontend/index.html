@@ -43,7 +43,7 @@ main{max-width:1200px;margin:auto;padding:0 18px 40px}
 .custom-video-wrap.ui-visible .skipbar,.custom-video-wrap:focus-within .skipbar{opacity:1}
 .skipbar button{pointer-events:auto;border:1px solid #ffffff55;background:#101522c9;color:white;border-radius:999px;padding:12px 16px;font-size:14px;font-weight:700;backdrop-filter:blur(8px)}
 .custom-video-wrap .player-badge{position:absolute;top:12px;left:12px;background:#101522b8;color:#fff;padding:6px 10px;border-radius:8px;font-size:11px;letter-spacing:.08em}
-.ctl{transition:opacity .2s}.pl.provider-mode .ctl{display:none}
+.ctl{transition:opacity .2s}.pl.provider-mode .ctl,.pl:has(iframe) .ctl{display:none}.pl.provider-mode{background:#000}.custom-video-wrap.ui-visible .player-badge{opacity:1}.custom-video-wrap:not(.ui-visible) .player-badge{opacity:0;transition:opacity .2s}.custom-video-wrap .player-badge{pointer-events:none}.custom-video-wrap video{outline:none}
 .ctl{position:absolute;left:0;right:0;bottom:0;padding:10px 14px;background:linear-gradient(transparent,rgba(0,0,0,.75))}
 .bar{height:4px;background:rgba(255,255,255,.25);border-radius:2px}.bar i{display:block;height:100%;width:32%;background:var(--ac);border-radius:2px}
 .cr{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:12px}.cr select{padding:4px 8px;font-size:12px}
