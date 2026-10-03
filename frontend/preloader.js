@@ -1,6 +1,5 @@
 (function () {
-  var LOGO = '/prime-hindi-logo.png';
-  var LOGO_CANDIDATES = [];
+  // Always prefer the exact logo saved from Admin Portal > Branding settings.
   var MIN_TIME = 1300;   // minimum show time (ms)
   var MAX_TIME = 7000;   // failsafe: force hide after this
 
@@ -42,13 +41,24 @@
     logoEl.onerror = function () { tryLogo(index + 1); };
     logoEl.src = logoCandidates[index];
   }
-  addLogoCandidate(LOGO);
-  addLogoCandidate('/assets/logo.png');
-  addLogoCandidate('/assets/logo.jpg');
-  fetch('/api/branding', { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (data) {
-    if (data && data.logoUrl) { logoCandidates.unshift(data.logoUrl); }
+  fetch('/api/branding', { cache: 'no-store' }).then(function (r) {
+    if (!r.ok) throw new Error('Branding request failed');
+    return r.json();
+  }).then(function (data) {
+    // The admin-saved URL (including optimized data URLs) is the source of truth.
+    if (data && typeof data.logoUrl === 'string' && data.logoUrl.trim()) {
+      addLogoCandidate(data.logoUrl);
+    }
+    // Only try legacy assets if the saved logo cannot be loaded.
+    addLogoCandidate('/assets/logo.png');
+    addLogoCandidate('/assets/logo.jpg');
     tryLogo(0);
-  }).catch(function () { tryLogo(0); });
+  }).catch(function () {
+    // If branding API is temporarily unavailable, try legacy assets only.
+    addLogoCandidate('/assets/logo.png');
+    addLogoCandidate('/assets/logo.jpg');
+    tryLogo(0);
+  });
 
   document.documentElement.classList.add('ph-lock');
 
