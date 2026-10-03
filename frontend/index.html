@@ -64,9 +64,9 @@ footer{border-top:1px solid var(--ln);background:var(--cd);padding:32px 18px 24p
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
 .npi{pointer-events:none;user-select:none;-webkit-user-drag:none}
 footer{position:relative;overflow:hidden}footer:before{content:"";position:absolute;right:-70px;bottom:-30px;width:340px;height:400px;background:radial-gradient(closest-side,rgba(0,190,220,.32),transparent)}
-.fnp{position:absolute;right:-14px;bottom:0;height:390px;filter:drop-shadow(0 0 36px rgba(0,190,255,.35))}
+.fnp{position:absolute;right:0;bottom:0;height:min(390px,72vh);width:auto;max-width:48vw;object-fit:contain;object-position:bottom right;filter:drop-shadow(0 0 36px rgba(0,190,255,.35))}
 footer .fi>div{position:relative;z-index:1;max-width:60%}
-@media(min-width:800px){footer .fi>div{max-width:none}.fi{padding-right:280px}.fnp{right:4%;height:440px}footer:before{right:calc(4% - 40px)}
+@media(min-width:800px){footer{min-height:480px;padding-bottom:28px}footer .fi>div{max-width:none}.fi{padding-right:clamp(300px,30vw,390px)}.fnp{right:clamp(12px,calc((100vw - 1200px)/2),90px);height:min(500px,72vh);max-width:34vw}footer:before{right:clamp(0px,calc((100vw - 1200px)/2),90px)}
 /* Header branding: larger logo with no clipping */
 header .lg{width:clamp(145px,20vw,220px)!important;max-width:none!important;flex:0 0 auto!important;overflow:visible!important;min-width:0}
 header .lg img{display:block;width:100%!important;height:56px!important;max-width:none!important;object-fit:contain!important;object-position:left center!important;transform:none!important}
