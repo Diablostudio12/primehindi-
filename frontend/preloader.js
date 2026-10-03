@@ -9,7 +9,7 @@
   'transition:opacity .6s ease,visibility .6s ease;}' +
   '#ph-preloader.ph-out{opacity:0;visibility:hidden;}' +
   '#ph-preloader .ph-wrap{display:flex;flex-direction:column;align-items:center;gap:28px;width:min(72vw,420px);perspective:900px;}' +
-  '#ph-preloader .ph-logo{width:100%;height:auto;display:block;opacity:0;transform-style:preserve-3d;backface-visibility:visible;will-change:transform,filter;' +
+  '#ph-preloader .ph-logo{width:100%;height:auto;display:none;opacity:0;transform-style:preserve-3d;backface-visibility:visible;will-change:transform,filter;' +
   'animation:phIn .9s cubic-bezier(.2,.8,.2,1) .1s forwards,phSpin3D 3.6s linear 1s infinite,phGlow 2.2s ease-in-out 1s infinite;}' +
   '#ph-preloader .ph-bar{width:55%;height:3px;border-radius:3px;background:rgba(255,255,255,.1);overflow:hidden;' +
   'opacity:0;animation:phFade .5s ease .6s forwards;}' +
