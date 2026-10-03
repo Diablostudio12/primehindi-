@@ -1,5 +1,6 @@
 (function () {
   var LOGO = '/prime-hindi-logo.png';
+  var LOGO_CANDIDATES = [];
   var MIN_TIME = 1300;   // minimum show time (ms)
   var MAX_TIME = 7000;   // failsafe: force hide after this
 
@@ -29,8 +30,26 @@
   var el = document.createElement('div');
   el.id = 'ph-preloader';
   el.setAttribute('aria-hidden', 'true');
-  el.innerHTML = '<div class="ph-wrap"><img class="ph-logo" src="' + LOGO + '" alt="Prime Hindi"><div class="ph-bar"><span></span></div></div>';
+  el.innerHTML = '<div class="ph-wrap"><img class="ph-logo" alt="Primordial Streams logo"><div class="ph-fallback" style="display:none;color:#fff;font:800 clamp(24px,7vw,44px)/1.15 system-ui,sans-serif;letter-spacing:.02em;text-align:center;text-shadow:0 0 22px rgba(59,91,255,.45)">PRIMORDIAL <span style="color:#e7c75a">STREAMS</span></div><div class="ph-bar"><span></span></div></div>';
   document.documentElement.appendChild(el);
+  var logoEl = el.querySelector('.ph-logo');
+  var fallbackEl = el.querySelector('.ph-fallback');
+  var logoCandidates = [];
+  function addLogoCandidate(value) { if (typeof value === 'string' && value.trim() && !logoCandidates.includes(value.trim())) logoCandidates.push(value.trim()); }
+  function tryLogo(index) {
+    if (index >= logoCandidates.length) { logoEl.style.display = 'none'; fallbackEl.style.display = 'block'; return; }
+    logoEl.onload = function () { logoEl.style.display = 'block'; fallbackEl.style.display = 'none'; };
+    logoEl.onerror = function () { tryLogo(index + 1); };
+    logoEl.src = logoCandidates[index];
+  }
+  addLogoCandidate(LOGO);
+  addLogoCandidate('/assets/logo.png');
+  addLogoCandidate('/assets/logo.jpg');
+  fetch('/api/branding', { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (data) {
+    if (data && data.logoUrl) { logoCandidates.unshift(data.logoUrl); }
+    tryLogo(0);
+  }).catch(function () { tryLogo(0); });
+
   document.documentElement.classList.add('ph-lock');
 
   var start = Date.now();
