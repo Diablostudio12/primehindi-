@@ -6,6 +6,7 @@ import pg from 'pg';
 import crypto from 'node:crypto';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import nodemailer from 'nodemailer';
 const {Pool}=pg; const app=express();
 const allowedOrigins = new Set(
   (process.env.FRONTEND_URL || 'https://primordialstreams.up.railway.app')
@@ -113,15 +114,28 @@ app.post('/api/auth/forgot-password',authLimiter,async(req,res)=>{
   const generic={message:'If an account exists for that email, a password reset link will be sent.'};
   const user=(await pool.query('select id,email from users where lower(email)=$1',[email])).rows[0];
   if(!user) return res.json(generic);
-  if(!process.env.RESEND_API_KEY || !process.env.PASSWORD_RESET_FROM) return res.status(503).json({error:'Password reset email is not configured yet. Please contact the site owner.'});
+  const useGmail=!!(process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD);
+  if(!useGmail && (!process.env.RESEND_API_KEY || !process.env.PASSWORD_RESET_FROM)) return res.status(503).json({error:'Password reset email is not configured yet. Please contact the site owner.'});
   const raw=crypto.randomBytes(32).toString('hex');
   const tokenHash=crypto.createHash('sha256').update(raw).digest('hex');
   await pool.query('update password_resets set used_at=now() where user_id=$1 and used_at is null',[user.id]);
   await pool.query("insert into password_resets(user_id,token_hash,expires_at) values($1,$2,now()+interval '30 minutes')",[user.id,tokenHash]);
   const base=String(process.env.FRONTEND_URL||'https://primordialstreams.up.railway.app').split(',')[0].replace(/\/$/,'');
   const resetUrl=base+'/#/reset-password/'+raw;
-  const mail=await fetch('https://api.resend.com/emails',{method:'POST',headers:{Authorization:'Bearer '+process.env.RESEND_API_KEY,'Content-Type':'application/json'},body:JSON.stringify({from:process.env.PASSWORD_RESET_FROM,to:[email],subject:'Reset your Primordial Streams password',html:'<div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;color:#172033"><h2>Reset your password</h2><p>We received a request to reset your Primordial Streams password.</p><p><a href="'+resetUrl+'" style="display:inline-block;padding:12px 18px;background:#2f6bff;color:#fff;border-radius:8px;text-decoration:none">Reset password</a></p><p>This link expires in 30 minutes and can only be used once. If you did not request this, ignore this email.</p></div>'})});
-  if(!mail.ok){const details=await mail.text().catch(()=> '');console.error('Password reset email provider error:',mail.status,details.slice(0,500));await pool.query('update password_resets set used_at=now() where token_hash=$1',[tokenHash]);return res.status(502).json({error:'Reset email could not be sent. Please try again later or contact the site owner.'});}
+  const html='<div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;color:#172033"><h2>Reset your password</h2><p>We received a request to reset your Primordial Streams password.</p><p><a href="'+resetUrl+'" style="display:inline-block;padding:12px 18px;background:#2f6bff;color:#fff;border-radius:8px;text-decoration:none">Reset password</a></p><p>This link expires in 30 minutes and can only be used once. If you did not request this, ignore this email.</p></div>';
+  try {
+    if(useGmail){
+      const transporter=nodemailer.createTransport({host:'smtp.gmail.com',port:465,secure:true,auth:{user:process.env.GMAIL_USER,pass:String(process.env.GMAIL_APP_PASSWORD).replace(/\s+/g,'')}});
+      await transporter.sendMail({from:'Primordial Streams <'+process.env.GMAIL_USER+'>',to:email,subject:'Reset your Primordial Streams password',html});
+    } else {
+      const mail=await fetch('https://api.resend.com/emails',{method:'POST',headers:{Authorization:'Bearer '+process.env.RESEND_API_KEY,'Content-Type':'application/json'},body:JSON.stringify({from:process.env.PASSWORD_RESET_FROM,to:[email],subject:'Reset your Primordial Streams password',html})});
+      if(!mail.ok){const details=await mail.text().catch(()=> '');throw new Error('Resend '+mail.status+': '+details.slice(0,300));}
+    }
+  } catch(e) {
+    console.error('Password reset email provider error:',e?.message||'Unknown email error');
+    await pool.query('update password_resets set used_at=now() where token_hash=$1',[tokenHash]);
+    return res.status(502).json({error:'Reset email could not be sent. Please check the email service settings and try again.'});
+  }
   return res.json(generic);
 });
 app.post('/api/auth/reset-password',authLimiter,async(req,res)=>{
