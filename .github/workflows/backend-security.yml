@@ -29,6 +29,6 @@ jobs:
       - name: Check server syntax
         run: node --check src/server.js
       - name: Check admin portal inline JavaScript syntax
-        run: node --input-type=module -e 'import fs from "node:fs"; const html=fs.readFileSync("../frontend/admin-portal.html","utf8"); const scripts=[...html.matchAll(/<script>([\\s\\S]*?)<\\/script>/g)]; for (const [, code] of scripts) new Function(code); console.log("Admin inline scripts syntax OK");'
+        run: node --input-type=module -e 'import fs from "node:fs"; const html=fs.readFileSync("../frontend/admin-portal.html","utf8"); let i=0; while ((i=html.indexOf("<script>",i))>=0) { const end=html.indexOf("</script>",i); if (end<0) throw new Error("Unclosed inline script"); new Function(html.slice(i+8,end)); i=end+9; } console.log("Admin inline scripts syntax OK");'
       - name: Run security regression tests
         run: npm test
