@@ -125,7 +125,7 @@ app.post('/api/auth/forgot-password',authLimiter,async(req,res)=>{
   const html='<div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;color:#172033"><h2>Reset your password</h2><p>We received a request to reset your Primordial Streams password.</p><p><a href="'+resetUrl+'" style="display:inline-block;padding:12px 18px;background:#2f6bff;color:#fff;border-radius:8px;text-decoration:none">Reset password</a></p><p>This link expires in 30 minutes and can only be used once. If you did not request this, ignore this email.</p></div>';
   try {
     if(useGmail){
-      const transporter=nodemailer.createTransport({host:'smtp.gmail.com',port:465,secure:true,auth:{user:process.env.GMAIL_USER,pass:String(process.env.GMAIL_APP_PASSWORD).replace(/\s+/g,'')}});
+      const transporter=nodemailer.createTransport({host:'smtp.gmail.com',port:587,secure:false,requireTLS:true,connectionTimeout:10000,greetingTimeout:10000,socketTimeout:15000,auth:{user:process.env.GMAIL_USER,pass:String(process.env.GMAIL_APP_PASSWORD).replace(/\s+/g,'')}});
       await transporter.sendMail({from:'Primordial Streams <'+process.env.GMAIL_USER+'>',to:email,subject:'Reset your Primordial Streams password',html});
     } else {
       const mail=await fetch('https://api.resend.com/emails',{method:'POST',headers:{Authorization:'Bearer '+process.env.RESEND_API_KEY,'Content-Type':'application/json'},body:JSON.stringify({from:process.env.PASSWORD_RESET_FROM,to:[email],subject:'Reset your Primordial Streams password',html})});
