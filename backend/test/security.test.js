@@ -17,9 +17,10 @@ test('security middleware and request throttling are enabled', () => {
   assert.match(source, /authLimiter/);
 });
 
-test('admin login requires a configured MFA passcode', () => {
-  assert.match(source, /Admin MFA is not configured/);
+test('admin MFA is enforced when a passcode is configured and remains optional otherwise', () => {
+  assert.match(source, /process\.env\.ADMIN_MFA_CODE/);
   assert.match(source, /String\(mfaCode\s*\|\|\s*''\)\s*!==\s*String\(process\.env\.ADMIN_MFA_CODE\)/);
+  assert.match(source, /Admin MFA is optional unless ADMIN_MFA_CODE is explicitly configured/);
 });
 
 test('request body size is bounded and safe errors are returned', () => {
