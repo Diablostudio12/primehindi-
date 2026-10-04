@@ -46,10 +46,18 @@ app.use("/api", async (req, res) => {
   }
 });
 
-// Explicit admin route so Railway always serves the admin page directly.
+// Staff surfaces are separate pages; keep them out of the public SPA fallback.
 app.get(["/admin", "/admin.html"], (req, res) => {
   res.set("Cache-Control", "no-store");
   res.sendFile(path.join(__dirname, "admin-portal.html"));
+});
+app.get(["/editor", "/editor.html"], (req, res) => {
+  res.set("Cache-Control", "no-store");
+  res.sendFile(path.join(__dirname, "editor.html"));
+});
+app.get(["/accept-invite", "/accept-invite.html"], (req, res) => {
+  res.set("Cache-Control", "no-store");
+  res.sendFile(path.join(__dirname, "accept-invite.html"));
 });
 
 app.use(express.static(__dirname, { extensions: ["html"] }));
