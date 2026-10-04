@@ -28,5 +28,7 @@ jobs:
         run: npm install
       - name: Check server syntax
         run: node --check src/server.js
+      - name: Check admin portal inline JavaScript syntax
+        run: node --input-type=module -e 'import fs from "node:fs"; const html=fs.readFileSync("../frontend/admin-portal.html","utf8"); const scripts=[...html.matchAll(/<script>([\\s\\S]*?)<\\/script>/g)]; for (const [, code] of scripts) new Function(code); console.log("Admin inline scripts syntax OK");'
       - name: Run security regression tests
         run: npm test
