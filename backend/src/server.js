@@ -126,7 +126,8 @@ app.post('/api/auth/forgot-password',authLimiter,async(req,res)=>{
   try {
     if(process.env.APPS_SCRIPT_URL && process.env.APPS_SCRIPT_SECRET){
       const relay=await fetch(process.env.APPS_SCRIPT_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({secret:process.env.APPS_SCRIPT_SECRET,to:email,subject:'Reset your Primordial Streams password',html})});
-      if(!relay.ok){const details=await relay.text().catch(()=> '');throw new Error('Apps Script '+relay.status+': '+details.slice(0,300));}
+      const relayData=await relay.json().catch(()=>({}));
+      if(!relay.ok || relayData.ok!==true) throw new Error('Apps Script relay failed: '+String(relayData.error||relay.status).slice(0,300));
     } else if(useGmail){
       const transporter=nodemailer.createTransport({host:'smtp.gmail.com',port:587,secure:false,requireTLS:true,connectionTimeout:10000,greetingTimeout:10000,socketTimeout:15000,auth:{user:process.env.GMAIL_USER,pass:String(process.env.GMAIL_APP_PASSWORD).replace(/\s+/g,'')}});
       await transporter.sendMail({from:'Primordial Streams <'+process.env.GMAIL_USER+'>',to:email,subject:'Reset your Primordial Streams password',html});
