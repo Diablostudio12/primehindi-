@@ -116,8 +116,8 @@ app.post('/api/auth/forgot-password',authLimiter,async(req,res)=>{
   if(!user) return res.json(generic);
 
   const hasBrevo=Boolean(process.env.BREVO_API_KEY && process.env.PASSWORD_RESET_FROM);
-  const hasGmail=Boolean(process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD);
-  if(!hasBrevo && !hasGmail) return res.status(503).json({error:'Password reset email is not configured yet. Please contact the site owner.'});
+  const hasResend=Boolean(process.env.RESEND_API_KEY && process.env.PASSWORD_RESET_FROM);
+  if(!hasBrevo && !hasResend) return res.status(503).json({error:'Password reset email is not configured yet. Please contact the site owner.'});
 
   const raw=crypto.randomBytes(32).toString('hex');
   const tokenHash=crypto.createHash('sha256').update(raw).digest('hex');
@@ -147,23 +147,21 @@ app.post('/api/auth/forgot-password',authLimiter,async(req,res)=>{
         throw new Error('Brevo '+mail.status+': '+details.slice(0,300));
       }
     } else {
-      const transporter=nodemailer.createTransport({
-        service:'gmail',
-        auth:{
-          user:process.env.GMAIL_USER,
-          pass:String(process.env.GMAIL_APP_PASSWORD).replace(/\s+/g,'')
-        },
-        connectionTimeout:20000,
-        greetingTimeout:20000,
-        socketTimeout:30000
+      const mail=await fetch('https://api.resend.com/emails',{
+        method:'POST',
+        headers:{Authorization:'Bearer '+process.env.RESEND_API_KEY,'Content-Type':'application/json'},
+        body:JSON.stringify({
+          from:process.env.PASSWORD_RESET_FROM,
+          to:[email],
+          subject:'Reset your Primordial Streams password',
+          html,
+          text
+        })
       });
-      await transporter.sendMail({
-        from:'"Primordial Streams" <'+process.env.GMAIL_USER+'>',
-        to:email,
-        subject:'Reset your Primordial Streams password',
-        html,
-        text
-      });
+      if(!mail.ok){
+        const details=await mail.text().catch(()=> '');
+        throw new Error('Resend '+mail.status+': '+details.slice(0,300));
+      }
     }
   } catch(e) {
     console.error('Password reset email provider error:',e?.message||'Unknown email error');
