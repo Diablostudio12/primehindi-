@@ -1,4 +1,4 @@
-# Primordial Streaming
+# primehindi 
 
 Premium anime streaming platform.
 
