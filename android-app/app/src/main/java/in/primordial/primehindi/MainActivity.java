@@ -15,6 +15,19 @@ import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.webkit.JavascriptInterface;
+import org.json.JSONObject;
+
+import androidx.activity.result.ActivityResult;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
+import com.google.android.gms.auth.api.signin.GoogleSignInClient;
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
+import com.google.android.gms.common.api.ApiException;
+import com.google.android.gms.tasks.Task;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
@@ -37,11 +50,15 @@ public class MainActivity extends AppCompatActivity {
     private View errorPanel;
     private View customView;
     private WebChromeClient.CustomViewCallback customViewCallback;
+    private GoogleSignInClient googleSignInClient;
+    private ActivityResultLauncher<Intent> googleSignInLauncher;
 
     @SuppressLint("SetJavaScriptEnabled")
     @Override
     protected void onCreate(Bundle state) {
         super.onCreate(state);
+        googleSignInLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(), this::handleGoogleSignInResult);
         WindowCompat.setDecorFitsSystemWindows(getWindow(), true);
         Window window = getWindow();
         window.setStatusBarColor(BRAND);
@@ -53,6 +70,7 @@ public class MainActivity extends AppCompatActivity {
 
         web = new WebView(this);
         web.setBackgroundColor(BRAND);
+        web.addJavascriptInterface(new NativeGoogleBridge(), "PrimeHindiGoogle");
         WebSettings settings = web.getSettings();
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
@@ -197,33 +215,58 @@ public class MainActivity extends AppCompatActivity {
         return panel;
     }
 
-    // Keep website pages inside the app. Open unrelated external links in the browser;
-    // allow Google authentication links to use the browser rather than a blocked WebView flow.
+    // Keep all web pages inside Prime Hindi. Google sign-in uses the native account chooser.
     private boolean routeUrl(String raw) {
         Uri uri = Uri.parse(raw);
         String scheme = uri.getScheme() == null ? "" : uri.getScheme().toLowerCase();
-        if (scheme.equals("http") || scheme.equals("https")) {
-            String host = uri.getHost() == null ? "" : uri.getHost().toLowerCase();
-            if (host.equals("primehindi.up.railway.app") ||
-                    host.equals("primordialstreams.up.railway.app") ||
-                    host.equals("primordial-streaming-backend-production.up.railway.app") ||
-                    host.endsWith(".google.com") || host.equals("accounts.google.com") ||
-                    host.equals("gstatic.com") || host.endsWith(".gstatic.com")) {
-                if (host.endsWith("google.com") || host.endsWith("gstatic.com")) {
-                    openExternal(raw);
-                    return true;
-                }
-                return false;
-            }
-            openExternal(raw);
-            return true;
-        }
+        if (scheme.equals("http") || scheme.equals("https")) return false;
         if (scheme.equals("tel") || scheme.equals("mailto") || scheme.equals("sms") ||
-                scheme.equals("market") || scheme.equals("intent")) {
+                scheme.equals("market")) {
             openExternal(raw);
             return true;
         }
         return true;
+    }
+
+    private class NativeGoogleBridge {
+        @JavascriptInterface
+        public void startGoogleSignIn(String clientId) {
+            runOnUiThread(() -> {
+                if (clientId == null || clientId.trim().isEmpty()) {
+                    notifyGoogleError("Google sign-in is not configured yet.");
+                    return;
+                }
+                GoogleSignInOptions options = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                        .requestEmail()
+                        .requestIdToken(clientId.trim())
+                        .build();
+                googleSignInClient = GoogleSignIn.getClient(MainActivity.this, options);
+                googleSignInLauncher.launch(googleSignInClient.getSignInIntent());
+            });
+        }
+    }
+
+    private void handleGoogleSignInResult(ActivityResult result) {
+        if (result.getResultCode() != RESULT_OK || result.getData() == null) {
+            notifyGoogleError("Google sign-in cancelled. Please try again.");
+            return;
+        }
+        Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(result.getData());
+        try {
+            GoogleSignInAccount account = task.getResult(ApiException.class);
+            String idToken = account == null ? null : account.getIdToken();
+            if (idToken == null || idToken.isEmpty()) {
+                notifyGoogleError("Google did not return a sign-in token. Check the OAuth setup.");
+                return;
+            }
+            if (web != null) web.evaluateJavascript("if(window.primeHindiNativeGoogleResult){window.primeHindiNativeGoogleResult(" + JSONObject.quote(idToken) + ");}", null);
+        } catch (ApiException e) {
+            notifyGoogleError("Google sign-in failed (" + e.getStatusCode() + "). Please try again.");
+        }
+    }
+
+    private void notifyGoogleError(String message) {
+        if (web != null) web.evaluateJavascript("if(window.primeHindiNativeGoogleError){window.primeHindiNativeGoogleError(" + JSONObject.quote(message) + ");}", null);
     }
 
     private void openExternal(String url) {
