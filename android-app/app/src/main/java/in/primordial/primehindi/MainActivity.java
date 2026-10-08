@@ -1,36 +1,26 @@
 package in.primordial.primehindi;
-
-import android.net.Uri;
-import android.os.Bundle;
-import android.view.View;
-import androidx.activity.OnBackPressedCallback;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.browser.customtabs.CustomTabsIntent;
-
-public class MainActivity extends AppCompatActivity {
-    private static final String HOME = "https://primehindi.up.railway.app/";
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        getWindow().setStatusBarColor(android.graphics.Color.rgb(10, 13, 20));
-        getWindow().setNavigationBarColor(android.graphics.Color.rgb(10, 13, 20));
-
-        openPrimeHindi();
-
-        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
-            @Override public void handleOnBackPressed() {
-                finish();
-            }
-        });
-    }
-
-    private void openPrimeHindi() {
-        CustomTabsIntent intent = new CustomTabsIntent.Builder()
-                .setShowTitle(false)
-                .setUrlBarHidingEnabled(true)
-                .setShareState(CustomTabsIntent.SHARE_STATE_OFF)
-                .build();
-        intent.launchUrl(this, Uri.parse(HOME));
-    }
+import android.content.*; import android.graphics.Color; import android.net.Uri; import android.os.*; import android.view.*; import android.widget.*;
+import androidx.appcompat.app.*; import androidx.media3.common.MediaItem; import androidx.media3.exoplayer.ExoPlayer; import androidx.media3.ui.PlayerView;
+import org.json.*; import java.util.concurrent.*;
+public class MainActivity extends AppCompatActivity{
+ static final int BG=0xff0a0d14,CARD=0xff111622,BLUE=0xff2f6bff,TEXT=0xfff2f5fa,MUTED=0xff8a94a8; LinearLayout content; ExecutorService io=Executors.newSingleThreadExecutor(); ExoPlayer player; int episodeId=-1;
+ TextView tv(String s,int z){TextView t=new TextView(this);t.setText(s);t.setTextColor(TEXT);t.setTextSize(z);t.setPadding(0,8,0,8);return t;}
+ Button btn(String s){Button b=new Button(this);b.setText(s);b.setTextColor(Color.WHITE);b.setTextSize(14);b.setAllCaps(false);b.setBackgroundColor(BLUE);return b;}
+ void shell(String name){LinearLayout r=new LinearLayout(this);r.setOrientation(LinearLayout.VERTICAL);r.setBackgroundColor(BG);LinearLayout bar=new LinearLayout(this);bar.setGravity(Gravity.CENTER_VERTICAL);bar.setPadding(14,8,8,8);TextView logo=tv("PRIME HINDI",18);logo.setTypeface(null,1);bar.addView(logo,new LinearLayout.LayoutParams(0,58,1));Button h=btn("⌂");h.setOnClickListener(v->home());bar.addView(h,new LinearLayout.LayoutParams(50,58));Button m=btn("☰");m.setOnClickListener(v->menu());bar.addView(m,new LinearLayout.LayoutParams(50,58));r.addView(bar);ScrollView sc=new ScrollView(this);content=new LinearLayout(this);content.setOrientation(LinearLayout.VERTICAL);content.setPadding(16,10,16,28);sc.addView(content);r.addView(sc,new LinearLayout.LayoutParams(-1,0,1));setContentView(r);}
+ @Override public void onCreate(Bundle b){super.onCreate(b);getWindow().setStatusBarColor(BG);getWindow().setNavigationBarColor(BG);home();}
+ void home(){shell("Home");content.addView(tv("Premium Hindi Anime Streaming",25));content.addView(tv("Free fan-dub anime • Prime Hindi",14));loadAnime("Home");}
+ void loadAnime(String h){io.execute(()->{try{JSONArray a=ApiClient.anime();runOnUiThread(()->render(a,h));}catch(Exception e){err(e);}});}
+ void render(JSONArray a,String h){content.removeAllViews();content.addView(tv(h,24));for(int i=0;i<a.length();i++){JSONObject x=a.optJSONObject(i);if(x==null)continue;LinearLayout c=new LinearLayout(this);c.setOrientation(LinearLayout.VERTICAL);c.setPadding(14,12,14,12);c.setBackgroundColor(CARD);c.addView(tv(x.optString("title"),18));c.addView(tv("★ "+x.optString("rating","—")+"   "+x.optString("year","—")+"   "+x.optString("status",""),12));c.addView(tv(x.optString("description",""),13));Button open=btn("View Anime");open.setOnClickListener(v->detail(x.optString("slug")));c.addView(open);LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-1,-2);lp.setMargins(0,0,0,12);content.addView(c,lp);}}
+ void detail(String slug){shell("Anime");content.addView(tv("Loading…",16));io.execute(()->{try{JSONObject a=ApiClient.anime(slug);runOnUiThread(()->detailUi(a));}catch(Exception e){err(e);}});}
+ void detailUi(JSONObject a){content.removeAllViews();content.addView(tv(a.optString("title"),28));content.addView(tv(a.optString("description"),14));content.addView(tv("★ "+a.optString("rating","—")+"  •  "+a.optString("year","—")+"  •  "+a.optString("type","series"),13));Button w=btn("＋ Add to Watchlist");w.setOnClickListener(v->io.execute(()->{try{ApiClient.watch(a.getInt("id"),true);runOnUiThread(()->toast("Added to watchlist"));}catch(Exception e){err(e);}}));content.addView(w);content.addView(tv("Episodes",21));JSONArray es=a.optJSONArray("episodes");if(es!=null)for(int i=0;i<es.length();i++){JSONObject e=es.optJSONObject(i);Button b=btn("Episode "+e.optInt("episode_number")+"  •  "+e.optString("title",""));b.setOnClickListener(v->play(e));content.addView(b,new LinearLayout.LayoutParams(-1,58));}content.addView(tv("Comments are available with your account.",13));}
+ void play(JSONObject e){episodeId=e.optInt("id",-1);String url=e.optString("video_url","");shell("Now Playing");PlayerView pv=new PlayerView(this);content.addView(pv,new LinearLayout.LayoutParams(-1,0,1));player=new ExoPlayer.Builder(this).build();pv.setPlayer(player);player.setMediaItem(MediaItem.fromUri(Uri.parse(url)));player.prepare();player.play();}
+ void menu(){shell("Menu");String[] names={"Home","Search","Watchlist","Studios","Profile","Notifications"};for(String n:names){Button b=btn(n);content.addView(b);b.setOnClickListener(v->{if(n.equals("Home"))home();else if(n.equals("Search"))search();else if(n.equals("Watchlist"))watchlist();else if(n.equals("Studios"))studios();else if(n.equals("Profile"))profile();else notifications();});}}
+ void search(){shell("Search");EditText q=new EditText(this);q.setHint("Search anime…");q.setTextColor(TEXT);q.setHintTextColor(MUTED);content.addView(q);Button b=btn("Search");content.addView(b);b.setOnClickListener(v->io.execute(()->{try{JSONArray a=ApiClient.anime(),o=new JSONArray();String z=q.getText().toString().toLowerCase();for(int i=0;i<a.length();i++){JSONObject x=a.getJSONObject(i);if(x.optString("title").toLowerCase().contains(z)||x.optString("alt_title").toLowerCase().contains(z))o.put(x);}runOnUiThread(()->render(o,"Search Results"));}catch(Exception e){err(e);}}));}
+ void watchlist(){shell("Watchlist");if(ApiClient.getToken().isEmpty()){content.addView(tv("Sign in to use Watchlist.",18));Button b=btn("Sign In");b.setOnClickListener(v->profile());content.addView(b);return;}io.execute(()->{try{render(ApiClient.watchlist(),"Your Watchlist");}catch(Exception e){err(e);}});}
+ void studios(){shell("Studios");io.execute(()->{try{JSONArray a=ApiClient.studios();runOnUiThread(()->{content.addView(tv("Dubbing Studios",24));for(int i=0;i<a.length();i++){JSONObject x=a.optJSONObject(i);content.addView(tv(x.optString("name")+" • "+x.optInt("anime_count")+" anime",17));}});}catch(Exception e){err(e);}});}
+ void profile(){shell("Account");if(ApiClient.getToken().isEmpty()){auth();return;}io.execute(()->{try{JSONObject u=ApiClient.me();runOnUiThread(()->{content.addView(tv("Welcome, "+u.optString("display_name"),25));content.addView(tv(u.optString("email"),14));Button w=btn("Watchlist");w.setOnClickListener(v->watchlist());content.addView(w);Button o=btn("Sign Out");o.setOnClickListener(v->{ApiClient.setToken("");home();});content.addView(o);});}catch(Exception e){err(e);}});}
+ void auth(){content.addView(tv("Sign in to Prime Hindi",25));EditText e=new EditText(this);e.setHint("Email");e.setTextColor(TEXT);content.addView(e);EditText p=new EditText(this);p.setHint("Password");p.setInputType(129);p.setTextColor(TEXT);content.addView(p);Button b=btn("Continue");content.addView(b);b.setOnClickListener(v->io.execute(()->{try{JSONObject r=ApiClient.login(e.getText().toString().trim(),p.getText().toString());ApiClient.setToken(r.getString("token"));runOnUiThread(this::home);}catch(Exception x){err(x);}}));content.addView(tv("Your existing Prime Hindi account works in the app.",13));}
+ void notifications(){shell("Notifications");if(ApiClient.getToken().isEmpty()){content.addView(tv("Sign in to view notifications.",18));return;}io.execute(()->{try{JSONArray a=ApiClient.notifications();runOnUiThread(()->{for(int i=0;i<a.length();i++){JSONObject x=a.optJSONObject(i);content.addView(tv(x.optString("title")+"\n"+x.optString("message"),16));}});}catch(Exception e){err(e);}});}
+ void toast(String s){Toast.makeText(this,s,Toast.LENGTH_SHORT).show();} void err(Exception e){runOnUiThread(()->Toast.makeText(this,e.getMessage()==null?"Something went wrong":e.getMessage(),Toast.LENGTH_LONG).show());}
+ @Override protected void onDestroy(){if(player!=null)player.release();io.shutdownNow();super.onDestroy();}
 }
