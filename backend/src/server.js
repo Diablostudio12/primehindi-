@@ -51,6 +51,7 @@ ALTER TABLE episodes ADD COLUMN IF NOT EXISTS is_exclusive BOOLEAN DEFAULT false
 ALTER TABLE episodes ADD COLUMN IF NOT EXISTS season_number INT NOT NULL DEFAULT 1;
 ALTER TABLE anime ADD COLUMN IF NOT EXISTS characters JSONB DEFAULT '[]'::jsonb;
 ALTER TABLE anime ADD COLUMN IF NOT EXISTS voice_cast JSONB NOT NULL DEFAULT '[]'::jsonb;
+UPDATE anime SET voice_cast=characters WHERE voice_cast='[]'::jsonb AND jsonb_typeof(characters)='array' AND characters <> '[]'::jsonb;
 ALTER TABLE anime ADD COLUMN IF NOT EXISTS alt_title TEXT DEFAULT '';
 CREATE TABLE IF NOT EXISTS watchlist(user_id INT REFERENCES users(id) ON DELETE CASCADE,anime_id INT REFERENCES anime(id) ON DELETE CASCADE,PRIMARY KEY(user_id,anime_id));
 CREATE TABLE IF NOT EXISTS progress(user_id INT REFERENCES users(id) ON DELETE CASCADE,episode_id INT REFERENCES episodes(id) ON DELETE CASCADE,seconds INT DEFAULT 0,updated_at TIMESTAMPTZ DEFAULT now(),PRIMARY KEY(user_id,episode_id));
