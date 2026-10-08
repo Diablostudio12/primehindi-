@@ -241,9 +241,10 @@ public class MainActivity extends AppCompatActivity {
                         .requestIdToken(clientId.trim())
                         .build();
                 googleSignInClient = GoogleSignIn.getClient(MainActivity.this, options);
-                // Launch the system account picker directly; avoid forcing sign-out before
-                // each attempt, which can route some devices into the add-account screen.
-                googleSignInLauncher.launch(googleSignInClient.getSignInIntent());
+                // Clear the app's cached Google selection (not the device accounts) so the
+                // chooser can offer Gmail accounts already added to this Android device.
+                googleSignInClient.signOut().addOnCompleteListener(task ->
+                        googleSignInLauncher.launch(googleSignInClient.getSignInIntent()));
             });
         }
     }
