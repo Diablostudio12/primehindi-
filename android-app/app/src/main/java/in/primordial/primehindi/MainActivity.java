@@ -111,7 +111,7 @@ public class MainActivity extends AppCompatActivity {
   c.addView(poster,new LinearLayout.LayoutParams(-1,compact?dp(120):dp(170)));if(!url.isEmpty())loadImage(url,poster);
   TextView title=tv(x.optString("title"),19);title.setTypeface(null,1);c.addView(title);
   c.addView(tv("★ "+x.optString("rating","—")+"   •   "+x.optString("year","—")+"   •   "+x.optString("status",""),13));
-  String genres=x.optJSONArray("genres")!=null?x.optJSONArray("genres").join(" • "):"";
+  JSONArray genreArray=x.optJSONArray("genres");StringBuilder genreText=new StringBuilder();if(genreArray!=null){for(int gi=0;gi<genreArray.length();gi++){if(gi>0)genreText.append(" • ");genreText.append(genreArray.optString(gi));}}String genres=genreText.toString();
   if(!genres.isEmpty())c.addView(tv(genres,12));
   String desc=x.optString("description","");if(desc.length()>150)desc=desc.substring(0,150)+"…";c.addView(tv(desc,13));
   Button open=btn("View Anime");open.setOnClickListener(v->detail(x.optString("slug")));c.addView(open);
