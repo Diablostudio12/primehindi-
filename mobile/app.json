@@ -1,0 +1,1 @@
+{"expo":{"name":"Prime Hindi","slug":"prime-hindi","version":"1.0.0","orientation":"portrait","scheme":"primehindi","userInterfaceStyle":"dark","newArchEnabled":true,"android":{"package":"in.primordial.primehindi","versionCode":1,"adaptiveIcon":{"backgroundColor":"#0A0D14"}},"plugins":["expo-router","expo-video"],"experiments":{"typedRoutes":true}}}
