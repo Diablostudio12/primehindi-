@@ -26,6 +26,8 @@ jobs:
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.10"
 
       - name: Build debug APK
         working-directory: android-app
@@ -37,3 +39,16 @@ jobs:
           name: prime-hindi-debug-apk
           path: android-app/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+
+      - name: Prepare release APK
+        run: cp android-app/app/build/outputs/apk/debug/app-debug.apk PrimeHindi.apk
+
+      - name: Publish latest APK release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: prime-hindi-latest
+          name: Prime Hindi Latest APK
+          prerelease: false
+          make_latest: true
+          files: PrimeHindi.apk
+          overwrite_files: true
