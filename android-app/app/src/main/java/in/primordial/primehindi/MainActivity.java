@@ -121,7 +121,7 @@ public class MainActivity extends AppCompatActivity {
   io.execute(()->{try{JSONArray p=ApiClient.progress();runOnUiThread(()->{if(p.length()==0)return;TextView h=tv("▶ Continue Watching",21);h.setTypeface(null,1);content.addView(h,0);int added=0;
     for(int i=0;i<p.length()&&added<5;i++){JSONObject pr=p.optJSONObject(i);int eid=pr.optInt("episode_id",-1);int sec=pr.optInt("seconds",0);if(sec<5)continue;
      for(int j=0;j<all.length();j++){JSONObject a=all.optJSONObject(j);JSONArray es=a==null?null:a.optJSONArray("episodes");if(es==null)continue;for(int k=0;k<es.length();k++){JSONObject e=es.optJSONObject(k);if(e!=null&&e.optInt("id",-2)==eid){TextView q=tv("▶ "+a.optString("title")+" • Episode "+e.optInt("episode_number")+"  ("+sec+"s)",15);q.setPadding(dp(12),dp(14),dp(12),dp(14));q.setBackgroundColor(card());q.setOnClickListener(v->play(a,e,sec));content.addView(q,1+added);added++;break;}}if(added>=5)break;}}
-   });}catch(Exception ignored){}}});
+   });}catch(Exception ignored){} });
  }
  void detail(String slug){
   currentSlug=slug;shell("Anime",true);content.addView(tv("Loading…",16));
