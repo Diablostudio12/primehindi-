@@ -1,4 +1,5 @@
 import express from "express";
+import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 
@@ -46,10 +47,35 @@ app.use("/api", async (req, res) => {
   }
 });
 
+// Serves an HTML page with extra feature scripts appended before </body>.
+const pageCache = new Map();
+function servePage(file, scripts) {
+  return (req, res) => {
+    try {
+      let html = pageCache.get(file);
+      if (!html) {
+        html = fs.readFileSync(path.join(__dirname, file), "utf8");
+        const tags = scripts.map((s) => '<script src="' + s + '"></script>').join("");
+        const i = html.lastIndexOf("</body>");
+        html = i < 0 ? html + tags : html.slice(0, i) + tags + html.slice(i);
+        pageCache.set(file, html);
+      }
+      res.set("Cache-Control", "no-cache");
+      res.type("html").send(html);
+    } catch (error) {
+      console.error("Page error:", error);
+      res.status(500).send("Page unavailable");
+    }
+  };
+}
+const homePage = servePage("index.html", ["/studios.js"]);
+
+app.get(["/", "/index.html"], homePage);
+
 // Staff surfaces are separate pages; keep them out of the public SPA fallback.
-app.get(["/admin", "/admin.html"], (req, res) => {
+app.get(["/admin", "/admin.html"], (req, res, next) => {
   res.set("Cache-Control", "no-store");
-  res.sendFile(path.join(__dirname, "admin-portal.html"));
+  servePage("admin-portal.html", ["/admin-studios.js"])(req, res, next);
 });
 app.get(["/editor", "/editor.html"], (req, res) => {
   res.set("Cache-Control", "no-store");
@@ -60,8 +86,8 @@ app.get(["/accept-invite", "/accept-invite.html"], (req, res) => {
   res.sendFile(path.join(__dirname, "accept-invite.html"));
 });
 
-app.use(express.static(__dirname, { extensions: ["html"] }));
-app.use((req, res) => res.sendFile(path.join(__dirname, "index.html")));
+app.use(express.static(__dirname, { extensions: ["html"], index: false }));
+app.use(homePage);
 
 app.listen(port, "0.0.0.0", () => {
   console.log("Primordial Streams running on " + port);
