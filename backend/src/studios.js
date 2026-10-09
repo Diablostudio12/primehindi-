@@ -36,6 +36,22 @@ export function registerStudios(app) {
   `);
   ready.catch((e) => console.error('Studios migration failed:', e.message));
 
+  // One-time cleanup of untouched demo anime that used to be re-seeded on every start.
+  // Only exact placeholder rows (no poster/banner, default text, no episodes/comments) are removed.
+  const demoSlugs = ["Dragon's Oath","Midnight Case","Sparkle Stage","Shadow Ninja","Royal Hearts","Titan Fall","Tea Time","Glimmer Woods","Ring King","Crimson Lord","Unit Seven","Sun Spike","Neon Protocol","Starlight Academy","Tower of Spells"]
+    .map((t) => t.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''));
+  ready.then(() => pool.query(
+    `DELETE FROM anime a WHERE a.slug = ANY($1::text[])
+       AND a.poster_url = '' AND a.banner_url = ''
+       AND a.description = 'Anime details can be updated from the Admin Portal.'
+       AND a.characters ? 'legacyEpisodes'
+       AND NOT EXISTS (SELECT 1 FROM episodes e WHERE e.anime_id = a.id)
+       AND NOT EXISTS (SELECT 1 FROM comments c WHERE c.anime_id = a.id)
+     RETURNING a.title`,
+    [demoSlugs]
+  )).then((r) => { if (r.rowCount) console.log('Removed ' + r.rowCount + ' untouched demo anime:', r.rows.map((x) => x.title).join(', ')); })
+    .catch((e) => console.error('Demo cleanup skipped:', e.message));
+
   const wrap = (fn) => async (req, res) => {
     try {
       await ready;
