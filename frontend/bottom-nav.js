@@ -46,7 +46,7 @@
     };
   }
   function activeKey() {
-    const route = location.hash.replace(/^#\\/?/,'').split('/')[0] || 'home';
+    const route = location.hash.replace(/^#\/?/,'').split('/')[0] || 'home';
     if (route === 'home') return 'home';
     if (['browse','anime','schedule','watchlist','watch'].includes(route)) return 'browse';
     if (route === 'search') return 'search';
@@ -55,7 +55,7 @@
     return 'browse';
   }
   function syncNav() {
-    const route = location.hash.replace(/^#\\/?/,'').split('/')[0] || 'home';
+    const route = location.hash.replace(/^#\/?/,'').split('/')[0] || 'home';
     document.body.classList.toggle('pn-watch', route === 'watch');
     const key = activeKey();
     nav.querySelectorAll('[data-pn-tab]').forEach(a => {
