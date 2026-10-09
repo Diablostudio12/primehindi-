@@ -84,8 +84,8 @@
   function applyBrowseFilter(filter) {
     if (typeof A === 'undefined' || typeof grid !== 'function') return;
     let rows = [...A];
-    if (filter === 'movies') rows = rows.filter(a => /movie|film/i.test(String(a.type || '')));
-    else if (filter === 'series') rows = rows.filter(a => !/movie|film/i.test(String(a.type || '')));
+    if (filter === 'movies') rows = rows.filter(a => /movie|film/i.test(String(a.type || 'series')));
+    else if (filter === 'series') rows = rows.filter(a => !/movie|film/i.test(String(a.type || 'series')));
     else if (filter === 'trending') rows = rows.slice(0,12);
     else if (filter === 'latest') rows = rows.slice(-12).reverse();
     const target = document.getElementById('pnBrowseResults');
