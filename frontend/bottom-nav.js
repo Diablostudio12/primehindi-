@@ -10,6 +10,8 @@
   const style = document.createElement('style');
   style.id = 'primeHindiBottomNavStyles';
   style.textContent = [
+    'header #headerThemeToggle,header #mb,header .menu-btn,header .ib[aria-label="Search"],header button[aria-label="Search"],header a[aria-label="Search"]{display:none!important}',
+
     '#primeHindiBottomNav{position:fixed;z-index:85;left:0;right:0;bottom:0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:2px;padding:8px 8px calc(8px + env(safe-area-inset-bottom,0px));background:rgba(12,16,26,.96);border-top:1px solid var(--ln,#26324a);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:0 -8px 28px rgba(0,0,0,.22)}',
     '#primeHindiBottomNav a{min-width:0;min-height:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border-radius:12px;color:var(--mu,#8A94A8);font:600 10px/1.1 Inter,system-ui,sans-serif;text-decoration:none;transition:color .16s,background .16s}',
     '#primeHindiBottomNav a svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}',
