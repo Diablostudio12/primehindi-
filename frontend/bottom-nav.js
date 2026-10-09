@@ -28,7 +28,7 @@
   document.body.appendChild(nav);
 
   if (typeof V !== 'undefined') {
-    V.categories = V.genres;
+    V.categories = () => V.genres().replace('<h1 class="ph">Genres</h1>', '<h1 class="ph">Categories</h1>');
     V.browse = () => {
       const recent = [...A].reverse().slice(0,8);
       const studioNames = [...new Set(A.map(a => a.studioName).filter(Boolean))].sort();
@@ -93,6 +93,22 @@
     document.querySelectorAll('[data-pn-filter]').forEach(b => b.setAttribute('aria-pressed',String(b.dataset.pnFilter === filter)));
   }
   document.addEventListener('click', e => { const b = e.target.closest('[data-pn-filter]'); if (b) applyBrowseFilter(b.dataset.pnFilter); });
+  // Expand the existing search to cover title, alternate title, genre, studio and voice credits.
+  document.addEventListener('input', e => {
+    if (!e.target || e.target.id !== 'q' || typeof A === 'undefined' || typeof grid !== 'function') return;
+    const query = e.target.value.trim().toLocaleLowerCase();
+    const genre = document.getElementById('gs')?.value || '';
+    const status = document.getElementById('ss')?.value || '';
+    const year = document.getElementById('ys')?.value || '';
+    const rows = A.filter(a => {
+      const cast = (a.voiceCast || []).flatMap(c => [c.name, c.actor]).filter(Boolean).join(' ');
+      const searchable = [a.t, a.altTitle, a.g, ...(a.genres || []), a.studioName, cast].join(' ').toLocaleLowerCase();
+      return (!query || searchable.includes(query)) && (!genre || (a.genres || [a.g]).includes(genre)) &&
+        (!status || a.s === status) && (!year || String(a.y) === year);
+    });
+    const target = document.getElementById('res');
+    if (target) target.innerHTML = rows.length ? grid(rows) : '<p class="mu">No anime, studio or voice credit found. Try another search.</p>';
+  });
   window.addEventListener('hashchange',() => setTimeout(syncNav,0));
   const app = document.getElementById('app');
   if (app && 'MutationObserver' in window) new MutationObserver(syncNav).observe(app,{childList:true});
