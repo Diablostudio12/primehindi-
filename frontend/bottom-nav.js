@@ -30,8 +30,9 @@
   if (typeof V !== 'undefined') {
     V.categories = V.genres;
     V.browse = () => {
-      const recent = [...A].slice(-8).reverse();
-      return '<h1 class="ph">Browse Anime</h1><p class="mu">Explore the Prime Hindi catalogue by format, popularity or latest additions.</p>' +
+      const recent = [...A].reverse().slice(0,8);
+      const studioNames = [...new Set(A.map(a => a.studioName).filter(Boolean))].sort();
+      return '<h1 class="ph">Browse Anime</h1><p class="mu">Explore Hindi-dubbed anime, movies, new additions and studios.</p>' +
         '<div id="pnBrowseFilters" role="group" aria-label="Filter anime">' +
         '<button type="button" data-pn-filter="all" aria-pressed="true">All Anime</button>' +
         '<button type="button" data-pn-filter="movies" aria-pressed="false">Movies</button>' +
@@ -40,15 +41,30 @@
         '<button type="button" data-pn-filter="latest" aria-pressed="false">Recently Added</button></div>' +
         '<div id="pnBrowseResults">' + (typeof grid === 'function' ? grid(A) : '') + '</div>' +
         '<section><div class="sh"><h2>Explore by genre</h2><a href="#/categories">View all</a></div><div class="chs">' +
-        (Array.isArray(G) ? G.slice(0,8).map(g => '<a class="chip" href="#/search/' + encodeURIComponent(g) + '">' + String(g).replace(/[&<>"]/g,'') + '</a>').join('') : '') +
-        '</div></section><section><div class="sh"><h2>Recently added</h2><a href="#/search">View all</a></div>' +
+        (Array.isArray(G) ? G.slice(0,10).map(g => '<a class="chip" href="#/search/' + encodeURIComponent(g) + '">' + esc(g) + '</a>').join('') : '') +
+        '</div></section>' +
+        (studioNames.length ? '<section><div class="sh"><h2>Studios</h2><a href="#/studios">View all</a></div><div class="chs">' + studioNames.slice(0,8).map(s => '<a class="chip" href="#/studios/' + encodeURIComponent(s) + '">' + esc(s) + '</a>').join('') + '</div></section>' : '') +
+        '<section><div class="sh"><h2>Recently added</h2><a href="#/search">View all</a></div>' +
         (typeof rib === 'function' ? rib(recent) : '') + '</section>';
     };
+    V.studios = (selected) => {
+      const studios = [...new Set(A.map(a => a.studioName).filter(Boolean))].sort();
+      if (selected) {
+        const titles = A.filter(a => a.studioName === selected);
+        return '<h1 class="ph">' + esc(selected) + '</h1><p class="mu">Anime credited to this studio in the Prime Hindi catalogue.</p><a class="chip" href="#/studios">← All studios</a>' +
+          (titles.length ? grid(titles) : '<p class="mu">No titles are currently listed for this studio.</p>');
+      }
+      return '<h1 class="ph">Dubbing Studios</h1><p class="mu">Explore anime by its credited dubbing studio.</p>' +
+        (studios.length ? '<div class="gr t">' + studios.map(s => '<a class="gt" href="#/studios/' + encodeURIComponent(s) + '">' + esc(s) + '<small>' + A.filter(a => a.studioName === s).length + ' titles</small></a>').join('') + '</div>' :
+        '<p class="mu">Studio credits will appear here when they are added to anime listings.</p>');
+    };
+    const originalProfile = V.profile;
+    V.profile = () => originalProfile() + '<section><div class="sh"><h2>Your library</h2></div><div class="chs"><a class="chip" href="#/watchlist">My List</a><a class="chip" href="#/watchlist">Watch History &amp; Continue Watching</a></div></section>';
   }
   function activeKey() {
     const route = location.hash.replace(/^#\/?/,'').split('/')[0] || 'home';
     if (route === 'home') return 'home';
-    if (['browse','anime','schedule','watchlist','watch'].includes(route)) return 'browse';
+    if (['browse','anime','schedule','watchlist','watch','studios'].includes(route)) return 'browse';
     if (route === 'search') return 'search';
     if (['genres','categories'].includes(route)) return 'categories';
     if (['profile','signin','signup','forgot-password','reset-password'].includes(route)) return 'profile';
