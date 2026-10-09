@@ -75,7 +75,7 @@ app.get(["/", "/index.html"], homePage);
 // Staff surfaces are separate pages; keep them out of the public SPA fallback.
 app.get(["/admin", "/admin.html"], (req, res, next) => {
   res.set("Cache-Control", "no-store");
-  servePage("admin-portal.html", ["/admin-studios.js"])(req, res, next);
+  servePage("admin-portal.html", ["/admin-studios.js", "/admin-enhancements.js"])(req, res, next);
 });
 app.get(["/editor", "/editor.html"], (req, res) => {
   res.set("Cache-Control", "no-store");
