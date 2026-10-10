@@ -116,3 +116,48 @@
   if (app && 'MutationObserver' in window) new MutationObserver(syncNav).observe(app,{childList:true});
   syncNav();
 })();
+
+// Characters & Hindi Voice Cast: compact row layout (character left, Hindi voice artist right)
+(() => {
+  if (typeof V === 'undefined' || typeof V.anime !== 'function' || typeof A === 'undefined') return;
+  const css = document.createElement('style');
+  css.id = 'pnCastStyles';
+  css.textContent = [
+    '.pn-cast-count{color:var(--mu,#93A0B7);font:600 13px ui-monospace,Menlo,monospace;white-space:nowrap}',
+    '.pn-cast-list{display:grid;gap:12px}',
+    '.pn-cast-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:12px;border:1px solid var(--ln,#26324a);border-radius:18px;background:var(--cd,#111622);min-width:0;overflow:hidden}',
+    '.pn-cast-side{display:flex;align-items:center;gap:12px;min-width:0;flex:1 1 0}',
+    '.pn-cast-side.r{flex-direction:row-reverse;text-align:right}',
+    '.pn-cast-side img,.pn-cast-ph{display:block;flex:0 0 76px;width:76px!important;height:76px!important;max-width:76px;max-height:76px;border-radius:14px;object-fit:cover;background:var(--bg,#0A0D14)}',
+    '.pn-cast-ph{display:grid;place-items:center;color:var(--mu,#93A0B7);font-size:9px}',
+    '.pn-cast-txt{min-width:0;display:flex;flex-direction:column;gap:3px}',
+    '.pn-cast-txt b{font-size:16px;line-height:1.2;overflow-wrap:anywhere;color:var(--tx,#F2F5FA)}',
+    '.pn-cast-txt span{font-size:13px;color:var(--mu,#93A0B7)}',
+    '.pn-cast-side:not(.r) .pn-cast-txt span{color:#00c8ff}',
+    '.pn-cast-row audio{flex:1 1 100%;width:100%;height:36px}',
+    '@media(max-width:430px){.pn-cast-side{gap:10px}.pn-cast-side img,.pn-cast-ph{flex-basis:60px;width:60px!important;height:60px!important;max-width:60px;max-height:60px}.pn-cast-txt b{font-size:15px}}'
+  ].join('');
+  document.head.appendChild(css);
+  const orig = V.anime;
+  V.anime = function (p) {
+    const html = orig.apply(this, arguments);
+    try {
+      const a = A.find(x => String(x.i) === String(p)) || A[+p || 0];
+      const raw = Array.isArray(a && a.voiceCast) ? a.voiceCast : (Array.isArray(a && a.voice_cast) ? a.voice_cast : []);
+      const cast = raw.filter(ch => ch && String(ch.name || '').trim());
+      if (!cast.length) return html;
+      const img = (src, alt) => src ? '<img src="' + esc(src) + '" alt="' + esc(alt) + '" loading="lazy">' : '<div class="pn-cast-ph">N/A</div>';
+      const rows = cast.map(ch =>
+        '<article class="pn-cast-row">' +
+        '<div class="pn-cast-side">' + img(ch.image, ch.name) +
+        '<div class="pn-cast-txt"><b>' + esc(ch.name) + '</b><span>' + (ch.role === 'supporting' ? 'Supporting' : 'Main') + '</span></div></div>' +
+        '<div class="pn-cast-side r">' + img(ch.actorImage, ch.actor || 'Voice artist') +
+        '<div class="pn-cast-txt"><b>' + esc(ch.actor || 'Not credited') + '</b><span>' + esc(ch.language || 'Hindi') + '</span></div></div>' +
+        (ch.audioSampleUrl ? '<audio controls preload="none" src="' + esc(ch.audioSampleUrl) + '"></audio>' : '') +
+        '</article>').join('');
+      return html
+        .replace(/<h2>Characters (?:&amp;|&) Hindi Voice Cast<\/h2><a href="#\/search">View all<\/a>/, () => '<h2>Characters &amp; Hindi Voice Cast</h2><span class="pn-cast-count">' + cast.length + ' Listed</span>')
+        .replace(/<div class="voice-cast-grid">[\s\S]*?<\/div><\/section>/, () => '<div class="pn-cast-list">' + rows + '</div></section>');
+    } catch (e) { return html; }
+  };
+})();
