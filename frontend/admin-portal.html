@@ -194,4 +194,5 @@ $("logoFile").addEventListener("change",async()=>{const file=$("logoFile").files
 if(token){api("/admin/whoami").then(w=>{currentRole=w.role;sessionStorage.setItem("ps_admin_role",currentRole);if(currentRole==="editor"){location.replace("/editor");return;}if(!["owner","admin"].includes(currentRole)){logout(false);$("loginError").textContent="Access denied: no active staff role.";return;}showApp();applyRolePermissions();return loadAll()}).catch(()=>showLogin())}else showLogin();
 })();
 </script>
+<script src="/admin-insights.js" defer></script>
 </body></html>
