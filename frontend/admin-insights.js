@@ -23,6 +23,24 @@ async function load(){
   $('phRefresh').addEventListener('click',load);
  }catch(e){root.innerHTML='<div class="panel" style="padding:18px"><strong>Dashboard metrics unavailable</strong><p class="muted">'+esc(e.message)+'</p><button class="btn secondary small" id="phRetry">Try again</button></div>';$('phRetry').addEventListener('click',load)}
 }
-document.addEventListener('click',e=>{if(e.target.closest('[data-tab="overview"]'))setTimeout(load,150);});
+async function loadAnalytics(){
+ const root=$('phAnalyticsTrend');if(!root||!getToken())return;
+ const days=Number($('phAnalyticsRange')?.value||30);
+ root.innerHTML='<p class="phSmall">Loading analytics…</p>';
+ try{
+  const res=await fetch('/api/admin/analytics/series?days='+encodeURIComponent(days),{headers:{Authorization:'Bearer '+getToken()},cache:'no-store'});
+  const data=await res.json();if(!res.ok)throw new Error(data.error||'Analytics unavailable');
+  const rows=Array.isArray(data.series)?data.series:[];
+  if(!rows.length){root.innerHTML='<p class="phSmall">No analytics data available for this range.</p>';return}
+  const max=Math.max(1,...rows.map(x=>Number(x.views||0)),...rows.map(x=>Number(x.signups||0)));
+  const W=760,H=160,L=30,R=12,T=12,B=28,iw=W-L-R,ih=H-T-B;
+  const pts=key=>rows.map((x,i)=>{const xx=L+(rows.length===1?0:i*iw/(rows.length-1));const yy=T+ih-(Number(x[key]||0)/max)*ih;return xx.toFixed(1)+','+yy.toFixed(1)}).join(' ');
+  const labels=[rows[0],rows[Math.floor((rows.length-1)/2)],rows[rows.length-1]].map(x=>new Date(x.date).toLocaleDateString(undefined,{month:'short',day:'numeric'}));
+  root.innerHTML='<div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:12px"><span class="phSmall"> <span style="color:#70a5ff">●</span> Playback progress updates</span><span class="phSmall"><span style="color:#59d5ad">●</span> New accounts</span><span class="phSmall">'+days+' days</span></div><svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Daily playback progress updates and new account registrations" style="width:100%;height:auto;max-height:260px"><line x1="'+L+'" y1="'+(T+ih)+'" x2="'+(W-R)+'" y2="'+(T+ih)+'" stroke="#334155"/><line x1="'+L+'" y1="'+(T+ih/2)+'" x2="'+(W-R)+'" y2="'+(T+ih/2)+'" stroke="#253044" stroke-dasharray="4 5"/><polyline points="'+pts('views')+'" fill="none" stroke="#70a5ff" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/><polyline points="'+pts('signups')+'" fill="none" stroke="#59d5ad" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/><text x="'+L+'" y="'+(H-6)+'" fill="#91a0b8" font-size="11">'+esc(labels[0])+'</text><text x="'+(W/2)+'" y="'+(H-6)+'" text-anchor="middle" fill="#91a0b8" font-size="11">'+esc(labels[1])+'</text><text x="'+(W-R)+'" y="'+(H-6)+'" text-anchor="end" fill="#91a0b8" font-size="11">'+esc(labels[2])+'</text></svg>';
+  const top=$('phTopTitles');if(top)top.innerHTML=(data.topStreamed||[]).length?'<div class="phActivity">'+data.topStreamed.map((x,i)=>'<div class="phRow"><div><strong>'+esc(i+1)+'. '+esc(x.title)+'</strong></div><div>'+fmt(x.streams)+' records</div></div>').join('')+'</div>':'<p class="phSmall">No saved playback records for titles yet.</p>';
+ }catch(e){root.innerHTML='<p class="phSmall">'+esc(e.message)+' <button class="btn secondary small" id="phAnalyticsRetry">Retry</button></p>';const b=$('phAnalyticsRetry');if(b)b.addEventListener('click',loadAnalytics)}
+}
+document.addEventListener('click',e=>{if(e.target.closest('[data-tab="overview"]'))setTimeout(load,150);if(e.target.closest('[data-tab="analytics"]'))setTimeout(loadAnalytics,150);if(e.target.closest('#phAnalyticsRefresh'))loadAnalytics()});
+document.addEventListener('change',e=>{if(e.target&&e.target.id==='phAnalyticsRange')loadAnalytics()});
 setTimeout(load,1000);
 })();
