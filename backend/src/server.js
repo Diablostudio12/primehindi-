@@ -229,6 +229,28 @@ app.post('/api/anime/:slug/comments',auth,async(req,res)=>{const content=String(
 app.get('/api/admin/comments',admin,async(req,res)=>{const status=['pending','approved','rejected'].includes(req.query.status)?req.query.status:null;const sql="select c.id,c.content,c.status,c.created_at,c.reviewed_at,u.id user_id,u.display_name user_name,u.email user_email,a.title anime_title from comments c join users u on u.id=c.user_id join anime a on a.id=c.anime_id "+(status?'where c.status=$1 ':'')+"order by case c.status when 'pending' then 0 when 'approved' then 1 else 2 end,c.created_at desc limit 500";const{rows}=await pool.query(sql,status?[status]:[]);res.json(rows)});
 app.patch('/api/admin/comments/:id',admin,async(req,res)=>{const status=String(req.body.status||'');if(!['approved','rejected'].includes(status))return res.status(400).json({error:'Status must be approved or rejected'});const{rows}=await pool.query('update comments set status=$1,reviewed_at=now() where id=$2 returning id,status,reviewed_at',[status,req.params.id]);if(!rows[0])return res.sendStatus(404);res.json(rows[0])});
 app.delete('/api/admin/comments/:id',admin,async(req,res)=>{await pool.query('delete from comments where id=$1',[req.params.id]);res.sendStatus(204)});
+app.get('/api/admin/overview',admin,async(req,res)=>{try{const {rows}=await pool.query(`
+SELECT
+ (SELECT count(*)::int FROM anime) AS total_anime,
+ (SELECT count(*)::int FROM anime WHERE lower(type) IN ('movie','film')) AS total_movies,
+ (SELECT count(*)::int FROM episodes) AS total_episodes,
+ (SELECT count(*)::int FROM anime WHERE lower(type) IN ('web-series','web series','webseries')) AS total_web_series,
+ (SELECT count(*)::int FROM anime WHERE lower(status) IN ('ongoing','on-air','airing')) AS ongoing_titles,
+ (SELECT count(*)::int FROM anime WHERE lower(status) IN ('completed','complete','finished')) AS completed_titles,
+ (SELECT count(*)::int FROM anime WHERE lower(status) IN ('upcoming','coming-soon','coming soon')) AS coming_soon_titles,
+ (SELECT count(*)::int FROM users WHERE role='user') AS registered_users,
+ (SELECT count(*)::int FROM users WHERE role='user' AND created_at >= now()-interval '7 days') AS new_users_7d,
+ (SELECT count(DISTINCT user_id)::int FROM progress WHERE updated_at >= now()-interval '30 days') AS active_users_30d,
+ (SELECT count(*)::int FROM progress) AS tracked_plays,
+ (SELECT count(*)::int FROM watchlist) AS watchlist_additions,
+ (SELECT count(*)::int FROM comments WHERE status='pending') AS pending_comments,
+ (SELECT count(*)::int FROM video_reports WHERE status='pending') AS pending_player_reports,
+ (SELECT count(*)::int FROM notifications n WHERE NOT EXISTS (SELECT 1 FROM notification_reads nr WHERE nr.notification_id=n.id)) AS unread_notifications,
+ (SELECT count(*)::int FROM studios) AS total_studios,
+ (SELECT count(*)::int FROM anime WHERE is_published=false) AS drafts,
+ (SELECT count(*)::int FROM episodes WHERE is_published=false) AS unpublished_episodes
+`);const recent=await pool.query('SELECT id,actor_email,actor_role,action,method,path,status_code,created_at FROM admin_activity ORDER BY created_at DESC LIMIT 8');res.set('Cache-Control','no-store');res.json({metrics:rows[0],recentActivity:recent.rows,generatedAt:new Date().toISOString(),definitions:{tracked_plays:'Count of saved playback-progress records; not a verified stream-start count.',active_users_30d:'Distinct users with a playback-progress update in the last 30 days.',new_users_7d:'User accounts created in the last 7 days.'}})}catch(error){console.error('Admin overview query failed:',error.message);res.status(500).json({error:'Unable to load live dashboard metrics.'})}});
+app.get('/api/admin/health',admin,async(req,res)=>{const checks={api:true,database:false};try{await pool.query('SELECT 1');checks.database=true;res.set('Cache-Control','no-store');res.json({status:'healthy',checks,checkedAt:new Date().toISOString(),uptimeSeconds:Math.floor(process.uptime())})}catch(error){res.status(503).json({status:'degraded',checks,checkedAt:new Date().toISOString(),error:'Database connectivity check failed.'})}});
 app.get('/api/admin/analytics',admin,async(req,res)=>{const p=await pool.query('select count(*)::int count from progress');const u=await pool.query('select count(distinct user_id)::int count from progress');res.json({progressCount:p.rows[0].count,activeViewers:u.rows[0].count});});
 app.get('/api/admin/analytics/series',admin,async(req,res)=>{const{rows}=await pool.query("select d.day::date as date,(select count(*)::int from progress p where p.updated_at>=d.day and p.updated_at<d.day+interval '1 day') as views,(select count(*)::int from users u where u.created_at>=d.day and u.created_at<d.day+interval '1 day') as signups from generate_series(current_date-interval '29 days',current_date,interval '1 day') d(day) order by d.day");const top=await pool.query("select a.id,a.title,a.poster_url,count(p.episode_id)::int streams from progress p join episodes e on e.id=p.episode_id join anime a on a.id=e.anime_id group by a.id order by streams desc limit 5");res.json({series:rows,topStreamed:top.rows})});
 app.patch('/api/admin/users/:id/ban',admin,async(req,res)=>{const banned=!!req.body.banned;const{rows}=await pool.query("update users set is_banned=$1 where id=$2 and role='user' returning id,email,is_banned",[banned,req.params.id]);if(!rows[0])return res.sendStatus(404);res.json(rows[0])});
