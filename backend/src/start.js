@@ -1,8 +1,9 @@
-// Entry point: loads the existing server unchanged and hooks the Studios routes
-// in just before it starts listening (all earlier middleware stays in effect).
+// Entry point: loads the existing server unchanged and hooks the security layer and
+// the Studios routes in just before it starts listening (all earlier middleware stays in effect).
 import express from 'express';
 import pg from 'pg';
 import { registerStudios } from './studios.js';
+import { registerSecurity } from './security.js';
 
 // The built-in demo catalog used to be re-inserted on every start, so demo anime
 // deleted from the admin panel kept coming back. Skip only that exact seed insert.
@@ -23,6 +24,11 @@ pg.Pool.prototype.query = function patchedQuery(config, ...rest) {
 const originalListen = express.application.listen;
 express.application.listen = function patchedListen(...args) {
   express.application.listen = originalListen;
+  try {
+    registerSecurity(this);
+  } catch (e) {
+    console.error('SECURITY LAYER FAILED TO LOAD:', e.message);
+  }
   try {
     registerStudios(this);
   } catch (e) {
