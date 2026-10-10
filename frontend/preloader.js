@@ -1,7 +1,7 @@
 (function () {
   // Always prefer the exact logo saved from Admin Portal > Branding settings.
   var MIN_TIME = 1300;   // minimum show time (ms)
-  var MAX_TIME = 7000;   // failsafe: force hide after this
+  var MAX_TIME = 15000;  // failsafe: force hide after this (catalog can be slow on cold start)
 
   var css = '' +
   '#ph-preloader{position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;' +
@@ -65,6 +65,7 @@
 
   var start = Date.now();
   var done = false;
+  var loaded = document.readyState === 'complete';
 
   function hide() {
     if (done) return;
@@ -77,8 +78,19 @@
     }, wait);
   }
 
-  if (document.readyState === 'complete') hide();
-  else window.addEventListener('load', hide);
+  // Keep the preloader up until the catalog has actually rendered (home page),
+  // so the "Loading catalog..." placeholder and footer are never shown to the user.
+  // Pages without a catalog (catalogReady undeclared) hide right after the load event.
+  function catalogDone() {
+    try { return typeof catalogReady === 'undefined' ? true : catalogReady === true; }
+    catch (e) { return false; }
+  }
+  function check() {
+    if (done) return;
+    if (loaded && catalogDone()) hide();
+  }
+  if (!loaded) window.addEventListener('load', function () { loaded = true; check(); });
+  setInterval(check, 120);
   setTimeout(hide, MAX_TIME);
 
   // back/forward button par preloader stuck na ho
