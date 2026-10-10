@@ -88,6 +88,8 @@ function servePage(file, scripts) {
         html = fs.readFileSync(path.join(__dirname, file), "utf8");
         // Pin third-party CDN script (supply-chain safety) instead of "@latest".
         html = html.split("https://unpkg.com/lucide@latest").join("https://unpkg.com/lucide@0.542.0");
+        // Staff bypass for maintenance mode must load first (head), before the catalog fetch runs.
+        if (file === "index.html") html = html.replace("<head>", '<head><script src="/maintenance-staff.js"></script>');
         const tags = scripts.map((s) => '<script src="' + s + '"></script>').join("");
         const i = html.lastIndexOf("</body>");
         html = i < 0 ? html + tags : html.slice(0, i) + tags + html.slice(i);
