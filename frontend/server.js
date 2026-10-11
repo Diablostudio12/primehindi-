@@ -103,7 +103,7 @@ function servePage(file, scripts) {
     }
   };
 }
-const homePage = servePage("index.html", ["/studios.js", "/details-redesign.js"]);
+const homePage = servePage("index.html", ["/studios.js", "/details-redesign.js", "/hero-desktop.js"]);
 
 app.get(["/", "/index.html"], homePage);
 
