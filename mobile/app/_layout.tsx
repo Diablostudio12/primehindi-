@@ -1,5 +1,5 @@
 import { useEffect,useRef,useState } from "react";
-import { ActivityIndicator,Animated,Easing,StyleSheet,Text,View } from "react-native";
+import { ActivityIndicator,Animated,Easing,Image,StyleSheet,Text,View } from "react-native";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { warm } from "../src/ui";
@@ -18,7 +18,7 @@ function Splash({onDone}:{onDone:()=>void}){
  },[]);
  return <Animated.View style={[s.wrap,{opacity:fade}]}>
   <Animated.View style={{alignItems:"center",opacity:pop,transform:[{scale:pop.interpolate({inputRange:[0,1],outputRange:[0.6,1]})}]}}>
-   <View style={s.badge}><Text style={s.play}>▶</Text></View>
+   <Image source={require("../assets/icon.png")} style={s.logo} resizeMode="contain"/>
    <Text style={s.brand}>PRIME HINDI</Text>
    <Text style={s.sub}>Hindi Anime Streaming</Text>
   </Animated.View>
@@ -36,8 +36,7 @@ export default function Layout(){
 }
 const s=StyleSheet.create({
  wrap:{...StyleSheet.absoluteFillObject,backgroundColor:"#0A0D14",alignItems:"center",justifyContent:"center",zIndex:50},
- badge:{width:92,height:92,borderRadius:26,backgroundColor:"#2F6BFF",alignItems:"center",justifyContent:"center"},
- play:{color:"#fff",fontSize:38,marginLeft:5},
+ logo:{width:130,height:130,borderRadius:28},
  brand:{color:"#F2F5FA",fontSize:28,fontWeight:"900",letterSpacing:3,marginTop:22},
  sub:{color:"#8A94A8",marginTop:6,fontSize:13}
 });
