@@ -7,6 +7,9 @@ on:
       - "mobile/**"
       - ".github/workflows/prime-hindi-expo-apk.yml"
 
+permissions:
+  contents: write
+
 jobs:
   build-android:
     runs-on: ubuntu-latest
@@ -24,6 +27,12 @@ jobs:
           cache: npm
           cache-dependency-path: mobile/package.json
 
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
       - name: Install dependencies
         run: npm install
 
@@ -34,10 +43,22 @@ jobs:
         working-directory: mobile/android
         run: ./gradlew assembleDebug --no-daemon
 
-      - name: Upload APK
+      - name: Rename APK
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk PrimeHindi.apk
+
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: PrimeHindi-Android-APK
-          path: mobile/android/app/build/outputs/apk/debug/app-debug.apk
+          path: mobile/PrimeHindi.apk
           if-no-files-found: error
           retention-days: 30
+
+      - name: Publish to release prime-hindi-latest
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: prime-hindi-latest
+          name: Prime Hindi Latest APK
+          files: mobile/PrimeHindi.apk
+          overwrite_files: true
+          prerelease: false
