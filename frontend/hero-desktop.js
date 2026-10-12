@@ -56,7 +56,7 @@
     '.hs-pr{position:absolute;left:0;right:0;bottom:0;height:3px;z-index:5;background:rgba(255,255,255,.1)}',
     '.hs-pr i{display:block;height:100%;transform-origin:left;transform:scaleX(0);background:linear-gradient(90deg,#8b5cf6,#d946ef);animation:hsPr var(--hs-t) linear forwards}',
     '.hs.is-paused .hs-pr i{animation-play-state:paused}@keyframes hsPr{to{transform:scaleX(1)}}',
-    '@media(min-width:700px){.hs-ar{display:grid}.hs-n{display:block}.hs-in{padding:0 84px 56px}.hs-dots{left:84px}.hs-d{-webkit-line-clamp:3}}',
+    '@media(min-width:700px){.hs-ar{display:grid}.hs-n{display:block}.hs-in{padding:0 52px 56px}.hs-dots{left:52px}.hs-d{-webkit-line-clamp:3}}',
     '@media(min-width:900px){.hs{margin:0 0 8px;border-radius:22px;height:min(560px,72vh);min-height:480px}.hs-p{display:block}.hs-in{padding:0 96px 64px}.hs-dots{left:96px;bottom:24px}.hs-n{right:36px;bottom:24px}.hs-sh{background:linear-gradient(90deg,var(--bg) 2%,rgba(10,13,20,.78) 38%,rgba(10,13,20,.1) 78%),linear-gradient(0deg,var(--bg) 2%,transparent 40%)}.hs-d{font-size:15px}.hs-b a{padding:13px 28px;font-size:15px}}',
     /* Desktop: cancel main's horizontal padding so the featured slider fills its content frame. */
     '@media(min-width:900px){main:has(.hs){padding-left:18px;padding-right:18px}.hs{margin-left:-18px;margin-right:-18px}}',
