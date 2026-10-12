@@ -58,6 +58,8 @@
     '.hs.is-paused .hs-pr i{animation-play-state:paused}@keyframes hsPr{to{transform:scaleX(1)}}',
     '@media(min-width:700px){.hs-ar{display:grid}.hs-n{display:block}.hs-in{padding:0 84px 56px}.hs-dots{left:84px}.hs-d{-webkit-line-clamp:3}}',
     '@media(min-width:900px){.hs{margin:0 0 8px;border-radius:22px;height:min(560px,72vh);min-height:480px}.hs-p{display:block}.hs-in{padding:0 96px 64px}.hs-dots{left:96px;bottom:24px}.hs-n{right:36px;bottom:24px}.hs-sh{background:linear-gradient(90deg,var(--bg) 2%,rgba(10,13,20,.78) 38%,rgba(10,13,20,.1) 78%),linear-gradient(0deg,var(--bg) 2%,transparent 40%)}.hs-d{font-size:15px}.hs-b a{padding:13px 28px;font-size:15px}}',
+    /* Desktop: cancel main's horizontal padding so the featured slider fills its content frame. */
+    '@media(min-width:900px){main:has(.hs){padding-left:18px;padding-right:18px}.hs{margin-left:-18px;margin-right:-18px}}',
     '@media(prefers-reduced-motion:reduce){.hs-bg,.hs-l>*,.hs-p{transition:none!important;transform:none!important}.hs-sl{transition:opacity .2s!important}}',
     /* ---------- sections / cards ---------- */
     '.pn-sec{margin:30px 0 0}.pn-sh{display:flex;justify-content:space-between;align-items:baseline;margin:0 0 14px}.pn-sh h2{font:700 20px Sora,Inter,sans-serif}.pn-sh a{color:var(--mu);font-size:13px;transition:color .2s}.pn-sh a:hover{color:#fff}',
