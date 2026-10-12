@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { ScrollView, View } from "react-native";
 import { api } from "../../src/api";
-import { Screen, Title, Grid, Chip, useAnime, listOf, titleOf } from "../../src/ui";
+import { Screen, Title, Grid, Chip, useAnime, listOf, titleOf, newest } from "../../src/ui";
 
 export default function Browse(){
   const {items,loading}=useAnime();
@@ -10,7 +10,7 @@ export default function Browse(){
   const [studios,setStudios]=useState<any[]>([]);
   useEffect(()=>{ api.studios().then(d=>setStudios(listOf(d,["studios","items"]))).catch(()=>{}); },[]);
   let data=items.filter(a=>studio===null||(a.studio_id??a.studioId)===studio);
-  data=sort==="az"?[...data].sort((a,b)=>titleOf(a).localeCompare(titleOf(b))):[...data].reverse();
+  data=sort==="az"?[...data].sort((a,b)=>titleOf(a).localeCompare(titleOf(b))):newest(data);
   return <Screen>
     <Title text="Browse" sub={items.length+" titles"}/>
     <View style={{height:48}}>

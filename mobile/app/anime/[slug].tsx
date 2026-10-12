@@ -2,13 +2,14 @@ import { useEffect,useState } from "react";
 import { ActivityIndicator,Image,Pressable,ScrollView,StyleSheet,Text,View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router,useLocalSearchParams } from "expo-router";
-import { api } from "../../src/api";
+import { api,getSession } from "../../src/api";
 
 const clean=(u:any)=>String(u||"").replace(/^__PDI_CUSTOM__:/,"").trim();
 
 export default function Detail(){
- const {slug}=useLocalSearchParams<{slug:string}>(); const [data,setData]=useState<any>(null); const [loading,setLoading]=useState(true);
+ const {slug}=useLocalSearchParams<{slug:string}>(); const [data,setData]=useState<any>(null); const [loading,setLoading]=useState(true); const [saved,setSaved]=useState(false);
  useEffect(()=>{if(slug)api.detail(slug).then(setData).catch(()=>setData(null)).finally(()=>setLoading(false))},[slug]);
+ useEffect(()=>{const id=data?.id;if(!id)return;getSession().then(t=>{if(t)api.watchlist().then(l=>setSaved(Array.isArray(l)&&l.some((x:any)=>x.id===id))).catch(()=>{})})},[data?.id]);
  if(loading)return <SafeAreaView style={s.safe}><ActivityIndicator color="#2F6BFF" size="large" style={{marginTop:60}}/></SafeAreaView>;
  if(!data)return <SafeAreaView style={s.safe}><Pressable onPress={()=>router.back()}><Text style={s.back}>← Back</Text></Pressable><Text style={s.err}>Anime not found.</Text></SafeAreaView>;
  const a=data.anime||data; const eps:any[]=data.episodes||a.episodes||[];
@@ -16,6 +17,7 @@ export default function Detail(){
  const genres:string[]=Array.isArray(a.genres)?a.genres:(a.genre?[a.genre]:[]);
  const meta=[a.year,a.type,a.status].filter(Boolean).join(" • ");
  const play=(e:any,i:number)=>router.push({pathname:"/player/[id]",params:{id:String(e.id??i),url:clean(e.video_url||e.videoUrl||e.video||e.url)}});
+ const toggle=async()=>{const t=await getSession();if(!t){router.push("/login");return}try{if(saved)await api.unwatch(a.id);else await api.watch(a.id);setSaved(!saved)}catch{}};
  const first=eps[0];
  return <SafeAreaView style={s.safe} edges={["top"]}><ScrollView contentContainerStyle={{paddingBottom:40}}>
   <Pressable onPress={()=>router.back()}><Text style={s.back}>← Back</Text></Pressable>
@@ -32,7 +34,10 @@ export default function Detail(){
     </View>
    </View>
    <View style={s.chips}>{a.hindi_dub&&<Text style={[s.chip,s.chipHi]}>Hindi Dub</Text>}{a.subtitles&&<Text style={s.chip}>Subtitles</Text>}{genres.map(g=><Text key={g} style={s.chip}>{g}</Text>)}</View>
-   {!!first&&<Pressable style={s.watch} onPress={()=>play(first,0)}><Text style={s.watchText}>▶  Watch Episode {first.episode_number||first.episodeNumber||1}</Text></Pressable>}
+   <View style={s.actions}>
+    {!!first&&<Pressable style={[s.watch,{flex:1}]} onPress={()=>play(first,0)}><Text style={s.watchText}>▶  Watch Episode {first.episode_number||first.episodeNumber||1}</Text></Pressable>}
+    <Pressable style={s.save} onPress={toggle}><Text style={s.saveText}>{saved?"✓ Saved":"+ My List"}</Text></Pressable>
+   </View>
    {!!a.description&&<Text style={s.desc}>{a.description}</Text>}
    <Text style={s.section}>Episodes</Text>
    {eps.length===0&&<Text style={s.alt}>No episodes yet.</Text>}
@@ -40,4 +45,4 @@ export default function Detail(){
   </View>
  </ScrollView></SafeAreaView>
 }
-const s=StyleSheet.create({safe:{flex:1,backgroundColor:"#0A0D14"},back:{color:"#8A94A8",fontSize:15,fontWeight:"700",padding:18},hero:{marginHorizontal:18,borderRadius:18,overflow:"hidden",backgroundColor:"#111622"},banner:{width:"100%",aspectRatio:1.8},body:{padding:18},row:{flexDirection:"row",gap:14},poster:{width:100,height:146,borderRadius:12,backgroundColor:"#111622"},title:{color:"#F2F5FA",fontSize:24,fontWeight:"900"},alt:{color:"#8A94A8",marginTop:4},meta:{color:"#2F6BFF",marginTop:7,fontWeight:"700",textTransform:"capitalize"},rating:{color:"#FBBF24",marginTop:6,fontWeight:"800"},studio:{color:"#AAB2C2",marginTop:6,fontSize:12},chips:{flexDirection:"row",flexWrap:"wrap",gap:8,marginTop:16},chip:{color:"#C7CEDD",backgroundColor:"#151B2B",borderWidth:1,borderColor:"#1E2536",paddingHorizontal:10,paddingVertical:5,borderRadius:999,fontSize:12,fontWeight:"700",overflow:"hidden"},chipHi:{color:"#fff",backgroundColor:"#2F6BFF",borderColor:"#2F6BFF"},watch:{backgroundColor:"#2F6BFF",borderRadius:12,padding:14,alignItems:"center",marginTop:18},watchText:{color:"#fff",fontWeight:"900",fontSize:15},desc:{color:"#AAB2C2",lineHeight:22,marginTop:18},section:{color:"#F2F5FA",fontSize:20,fontWeight:"900",marginTop:25,marginBottom:10},ep:{backgroundColor:"#111622",borderWidth:1,borderColor:"#1E2536",padding:16,borderRadius:12,marginBottom:9,flexDirection:"row",alignItems:"center"},epText:{color:"#F2F5FA",fontWeight:"700"},epSub:{color:"#8A94A8",marginTop:3,fontSize:12},play:{color:"#2F6BFF"},err:{color:"#F2F5FA",textAlign:"center",marginTop:60}});
+const s=StyleSheet.create({safe:{flex:1,backgroundColor:"#0A0D14"},back:{color:"#8A94A8",fontSize:15,fontWeight:"700",padding:18},hero:{marginHorizontal:18,borderRadius:18,overflow:"hidden",backgroundColor:"#111622"},banner:{width:"100%",aspectRatio:1.8},body:{padding:18},row:{flexDirection:"row",gap:14},poster:{width:100,height:146,borderRadius:12,backgroundColor:"#111622"},title:{color:"#F2F5FA",fontSize:24,fontWeight:"900"},alt:{color:"#8A94A8",marginTop:4},meta:{color:"#2F6BFF",marginTop:7,fontWeight:"700",textTransform:"capitalize"},rating:{color:"#FBBF24",marginTop:6,fontWeight:"800"},studio:{color:"#AAB2C2",marginTop:6,fontSize:12},chips:{flexDirection:"row",flexWrap:"wrap",gap:8,marginTop:16},chip:{color:"#C7CEDD",backgroundColor:"#151B2B",borderWidth:1,borderColor:"#1E2536",paddingHorizontal:10,paddingVertical:5,borderRadius:999,fontSize:12,fontWeight:"700",overflow:"hidden"},chipHi:{color:"#fff",backgroundColor:"#2F6BFF",borderColor:"#2F6BFF"},actions:{flexDirection:"row",gap:10,marginTop:18},watch:{backgroundColor:"#2F6BFF",borderRadius:12,padding:14,alignItems:"center"},watchText:{color:"#fff",fontWeight:"900",fontSize:15},save:{backgroundColor:"#151B2B",borderWidth:1,borderColor:"#1E2536",borderRadius:12,paddingHorizontal:16,justifyContent:"center"},saveText:{color:"#F2F5FA",fontWeight:"800"},desc:{color:"#AAB2C2",lineHeight:22,marginTop:18},section:{color:"#F2F5FA",fontSize:20,fontWeight:"900",marginTop:25,marginBottom:10},ep:{backgroundColor:"#111622",borderWidth:1,borderColor:"#1E2536",padding:16,borderRadius:12,marginBottom:9,flexDirection:"row",alignItems:"center"},epText:{color:"#F2F5FA",fontWeight:"700"},epSub:{color:"#8A94A8",marginTop:3,fontSize:12},play:{color:"#2F6BFF"},err:{color:"#F2F5FA",textAlign:"center",marginTop:60}});

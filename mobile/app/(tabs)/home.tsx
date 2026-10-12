@@ -1,10 +1,10 @@
 import { ImageBackground, Pressable, ScrollView, Text, View, StyleSheet } from "react-native";
 import { router } from "expo-router";
 import { ActivityIndicator } from "react-native";
-import { Screen, Row, C, useAnime, titleOf, posterOf, genresOf, openAnime } from "../../src/ui";
+import { Screen, Row, C, s, useAnime, titleOf, posterOf, genresOf, openAnime, newest } from "../../src/ui";
 
 export default function Home(){
-  const {items,loading}=useAnime();
+  const {items,loading,reload}=useAnime();
   const hero=items[0];
   const count:Record<string,number>={};
   items.forEach(a=>genresOf(a).forEach(g=>{count[g]=(count[g]||0)+1;}));
@@ -15,6 +15,7 @@ export default function Home(){
       <Pressable onPress={()=>router.push("/search")} hitSlop={10}><Text style={h.go}>Search</Text></Pressable>
     </View>
     {loading?<ActivityIndicator size="large" color={C.blue} style={{marginTop:40}}/>:
+    !items.length?<View style={{padding:30,alignItems:"center"}}><Text style={{color:C.mute,textAlign:"center",marginBottom:18}}>Anime load nahi hue. Internet check karke retry karo.</Text><Pressable style={s.btn} onPress={reload}><Text style={s.btnT}>RETRY</Text></Pressable></View>:
     <ScrollView contentContainerStyle={{paddingBottom:30}}>
       {hero?<Pressable onPress={()=>openAnime(hero)} style={{marginHorizontal:18}}>
         <ImageBackground source={posterOf(hero)?{uri:posterOf(hero)}:undefined} style={h.hero} imageStyle={{borderRadius:16}} resizeMode="cover">
@@ -22,7 +23,7 @@ export default function Home(){
         </ImageBackground>
       </Pressable>:null}
       <Row title="Trending now" data={items.slice(0,12)}/>
-      <Row title="Latest additions" data={[...items].reverse().slice(0,12)}/>
+      <Row title="Latest additions" data={newest(items).slice(0,12)}/>
       {topGenres.map(g=><Row key={g} title={g} data={items.filter(a=>genresOf(a).includes(g)).slice(0,12)}/>)}
     </ScrollView>}
   </Screen>;

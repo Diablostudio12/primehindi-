@@ -6,10 +6,11 @@
     "orientation": "portrait",
     "scheme": "primehindi",
     "userInterfaceStyle": "dark",
+    "backgroundColor": "#0A0D14",
     "newArchEnabled": true,
     "android": {
       "package": "in.primordial.primehindi",
-      "versionCode": 2,
+      "versionCode": 3,
       "adaptiveIcon": {
         "backgroundColor": "#0A0D14"
       }

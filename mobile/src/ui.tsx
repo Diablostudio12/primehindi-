@@ -23,6 +23,8 @@ export const listOf=(d:any,keys:string[]):any[]=>{
 export const openAnime=(a:Anime)=>router.push({pathname:"/anime/[slug]",params:{slug:a.slug}});
 
 let cache:Anime[]|null=null;
+export const newest=(items:Anime[])=>[...items].sort((a,b)=>String(b.created_at||"").localeCompare(String(a.created_at||"")));
+export const warm=()=>Promise.race([api.anime().then(d=>{cache=listOf(d,["anime","items"]);}).catch(()=>{}),new Promise<void>(r=>setTimeout(r,5000))]);
 export function useAnime(){
   const [items,setItems]=useState<Anime[]>(cache||[]);
   const [loading,setLoading]=useState(!cache);

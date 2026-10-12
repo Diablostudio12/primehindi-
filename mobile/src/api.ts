@@ -12,6 +12,8 @@ export const api={
  register:(displayName:string,email:string,password:string)=>req("/auth/register",{method:"POST",body:JSON.stringify({displayName,email,password})}),
  me:()=>req("/me"),
  watchlist:()=>req("/watchlist"),
+ watch:(id:number)=>req("/watchlist/"+id,{method:"POST"}),
+ unwatch:(id:number)=>req("/watchlist/"+id,{method:"DELETE"}),
  notifications:()=>req("/notifications"),
  comments:(slug:string)=>req("/anime/"+encodeURIComponent(slug)+"/comments")
 };

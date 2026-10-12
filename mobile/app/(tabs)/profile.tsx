@@ -18,7 +18,7 @@ export default function Profile(){
     return ()=>{ on=false; };
   },[]));
   async function logout(){ await setSession(""); setMe(null); setNotes([]); setState("guest"); }
-  const name=me?.displayName||me?.name||me?.username||"User";
+  const name=me?.display_name||me?.displayName||me?.name||me?.username||"User";
   return <Screen>
     <Title text="Profile"/>
     {state==="load"?<ActivityIndicator size="large" color={C.blue} style={{marginTop:40}}/>:
@@ -34,7 +34,8 @@ export default function Profile(){
       {notes.length?<View style={{marginTop:22}}>
         <Text style={{color:C.text,fontSize:17,fontWeight:"800",marginBottom:10}}>Notifications</Text>
         {notes.map((n,i)=><View key={n.id??i} style={{backgroundColor:C.card,borderRadius:12,padding:14,marginBottom:8,borderWidth:1,borderColor:C.line}}>
-          <Text style={{color:C.text}}>{n.message||n.title||n.text||"Notification"}</Text>
+          {!!n.title&&<Text style={{color:C.text,fontWeight:"800",marginBottom:3}}>{n.title}</Text>}
+          <Text style={{color:C.mute}}>{n.message||n.text||"Notification"}</Text>
         </View>)}
       </View>:null}
       <Pressable onPress={logout} style={[s.btn,{backgroundColor:"#1E2536",marginTop:26}]}><Text style={s.btnT}>LOGOUT</Text></Pressable>
