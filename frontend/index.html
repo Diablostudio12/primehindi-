@@ -122,6 +122,56 @@ header a.lg.ph-brand img#headerBrandLogo{
   }
 }
 
+
+/* Final targeted override: legacy responsive rules above must not clip the brand or constrain the homepage hero. */
+header a.ph-brand{
+  display:flex!important;
+  flex:0 0 auto!important;
+  width:max-content!important;
+  max-width:none!important;
+  min-width:0!important;
+  overflow:visible!important;
+  clip-path:none!important;
+}
+header a.ph-brand img#headerBrandLogo{
+  display:block!important;
+  width:clamp(145px,20vw,205px)!important;
+  height:48px!important;
+  min-width:0!important;
+  max-width:none!important;
+  object-fit:contain!important;
+  object-position:left center!important;
+  transform:none!important;
+}
+@media(max-width:600px){
+  header a.ph-brand img#headerBrandLogo{
+    width:clamp(132px,36vw,160px)!important;
+    height:42px!important;
+  }
+  header a.ph-brand{
+    max-width:none!important;
+    flex-shrink:0!important;
+  }
+}
+@media(max-width:390px){
+  header a.ph-brand img#headerBrandLogo{
+    width:clamp(124px,34vw,138px)!important;
+    height:36px!important;
+  }
+}
+/* Only the homepage's hero mount; avoid changing anime-detail hero panels. */
+@media(min-width:769px){
+  main#app #hero > .hero{
+    position:relative!important;
+    left:calc((100vw - 100%)/-2)!important;
+    width:100vw!important;
+    max-width:none!important;
+    margin-left:0!important;
+    margin-right:0!important;
+    box-sizing:border-box!important;
+  }
+}
+
 </style></head><body>
 <header><a href="#/" class="lg ph-brand" aria-label="primehindi home"><img id="headerBrandLogo" class="header-brand-logo" alt="primehindi logo" style="display:none"></a>
 <nav><a href="#/">Home</a><a href="#/genres">Genres</a><a href="#/schedule">Schedule</a><a href="#/watchlist">Watchlist</a></nav><span class="sp"></span>
