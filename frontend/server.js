@@ -90,6 +90,17 @@ function servePage(file, scripts) {
         html = html.split("https://unpkg.com/lucide@latest").join("https://unpkg.com/lucide@0.542.0");
         // Staff bypass for maintenance mode must load first (head), before the catalog fetch runs.
         if (file === "index.html") html = html.replace("<head>", '<head><script src="/maintenance-staff.js"></script>');
+        // Root-cause repair for the mobile header logo: index.html's stylesheet opens
+        // "@media(min-width:800px){footer{...}" and never closes it, so every rule after it
+        // (all header-logo sizing, incl. the mobile ones) is nested inside that desktop-only
+        // query and never applies below 800px. Close the block right before the
+        // "Header branding" comment. No-op once index.html itself is fixed.
+        if (file === "index.html") {
+          html = html.replace(
+            /(footer:before\{right:clamp\(0px,calc\(\(100vw - 1200px\)\/2\),90px\)\})(\r?\n\/\* Header branding: larger logo with no clipping \*\/)/,
+            "$1}$2"
+          );
+        }
         const tags = scripts.map((s) => '<script src="' + s + '"></script>').join("");
         const i = html.lastIndexOf("</body>");
         html = i < 0 ? html + tags : html.slice(0, i) + tags + html.slice(i);
