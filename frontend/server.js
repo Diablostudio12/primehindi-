@@ -118,6 +118,25 @@ const homePage = servePage("index.html", ["/studios.js", "/details-redesign.js",
 
 app.get(["/", "/index.html"], homePage);
 
+// Homepage hero gutters: hero-desktop.js zeroes <main>'s side padding whenever the slider is
+// present (desktop/tablet widths), so the slider and every section below it touch the screen
+// edges while the header keeps its 18px gutter. Keep main's normal padding so the slider lines
+// up with the header and the sections. No-op once hero-desktop.js itself is fixed.
+let heroJs = null;
+app.get("/hero-desktop.js", (req, res, next) => {
+  try {
+    if (heroJs === null) {
+      heroJs = fs
+        .readFileSync(path.join(__dirname, "hero-desktop.js"), "utf8")
+        .replace("max-width:1480px;padding-left:0;padding-right:0;box-sizing:border-box}", "max-width:1480px;box-sizing:border-box}");
+    }
+    res.set("Cache-Control", "no-cache");
+    res.type("application/javascript").send(heroJs);
+  } catch (error) {
+    next();
+  }
+});
+
 // Staff surfaces are separate pages; keep them out of the public SPA fallback.
 app.get(["/admin", "/admin.html"], (req, res, next) => {
   res.set("Cache-Control", "no-store");
