@@ -4,6 +4,7 @@ import express from 'express';
 import pg from 'pg';
 import { registerStudios } from './studios.js';
 import { registerSecurity } from './security.js';
+import { registerEngagement } from './engagement.js';
 
 // The built-in demo catalog used to be re-inserted on every start, so demo anime
 // deleted from the admin panel kept coming back. Skip only that exact seed insert.
@@ -33,6 +34,11 @@ express.application.listen = function patchedListen(...args) {
     registerStudios(this);
   } catch (e) {
     console.error('Studios feature failed to load:', e.message);
+  }
+  try {
+    registerEngagement(this);
+  } catch (e) {
+    console.error('Engagement feature failed to load:', e.message);
   }
   return originalListen.apply(this, args);
 };
