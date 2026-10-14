@@ -122,13 +122,16 @@ app.get(["/", "/index.html"], homePage);
 // present (desktop/tablet widths), so the slider and every section below it touch the screen
 // edges while the header keeps its 18px gutter. Keep main's normal padding so the slider lines
 // up with the header and the sections. No-op once hero-desktop.js itself is fixed.
+// Also hides the purple slider progress line (.hs-pr) visually. The element and its animation
+// stay in place (opacity:0), so the slide timing (animationend -> next slide) is unchanged.
 let heroJs = null;
 app.get("/hero-desktop.js", (req, res, next) => {
   try {
     if (heroJs === null) {
       heroJs = fs
         .readFileSync(path.join(__dirname, "hero-desktop.js"), "utf8")
-        .replace("max-width:1480px;padding-left:0;padding-right:0;box-sizing:border-box}", "max-width:1480px;box-sizing:border-box}");
+        .replace("max-width:1480px;padding-left:0;padding-right:0;box-sizing:border-box}", "max-width:1480px;box-sizing:border-box}")
+        .replace("z-index:5;background:rgba(255,255,255,.1)}", "z-index:5;opacity:0;pointer-events:none;background:rgba(255,255,255,.1)}");
     }
     res.set("Cache-Control", "no-cache");
     res.type("application/javascript").send(heroJs);
