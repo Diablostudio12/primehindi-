@@ -114,7 +114,7 @@ function servePage(file, scripts) {
     }
   };
 }
-const homePage = servePage("index.html", ["/studios.js", "/details-redesign.js", "/hero-desktop.js"]);
+const homePage = servePage("index.html", ["/studios.js", "/details-redesign.js", "/hero-desktop.js", "/watch-panel.js"]);
 
 app.get(["/", "/index.html"], homePage);
 
