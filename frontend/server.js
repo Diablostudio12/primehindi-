@@ -2,6 +2,7 @@ import express from "express";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { createSeo } from "./seo.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -14,6 +15,7 @@ const backendUrl =
   "https://primordial-streaming-backend-production.up.railway.app";
 const PROXY_SECRET = process.env.PROXY_SHARED_SECRET || "";
 const MAX_BODY = 9 * 1024 * 1024;
+const seo = createSeo({ backendUrl, secret: PROXY_SECRET });
 
 // Security headers for every response (HTML, assets and the API proxy).
 app.use((req, res, next) => {
@@ -24,6 +26,16 @@ app.use((req, res, next) => {
   res.setHeader("Permissions-Policy", "camera=(), geolocation=(), payment=(), usb=()");
   res.setHeader("Content-Security-Policy", "frame-ancestors 'none'; base-uri 'self'; object-src 'none'");
   next();
+});
+
+// SEO: keep API / staff pages out of search results (X-Robots-Tag), serve robots.txt + sitemap.xml.
+app.use(seo.robotsHeader);
+app.get("/robots.txt", seo.robots);
+app.get("/sitemap.xml", (req, res) => {
+  seo.sitemap(req, res).catch((error) => {
+    console.error("Sitemap error:", error?.message || error);
+    res.status(500).type("text/plain").send("Sitemap unavailable");
+  });
 });
 
 app.use("/api", async (req, res) => {
@@ -79,9 +91,10 @@ app.use("/api", async (req, res) => {
 });
 
 // Serves an HTML page with extra feature scripts appended before </body>.
+// Optional decorate(req, html) -> { html, status } adds per-request SEO tags (cache stays untouched).
 const pageCache = new Map();
-function servePage(file, scripts) {
-  return (req, res) => {
+function servePage(file, scripts, decorate) {
+  return async (req, res) => {
     try {
       let html = pageCache.get(file);
       if (!html) {
@@ -106,17 +119,29 @@ function servePage(file, scripts) {
         html = i < 0 ? html + tags : html.slice(0, i) + tags + html.slice(i);
         pageCache.set(file, html);
       }
+      let page = html;
+      let status = 200;
+      if (decorate) {
+        try {
+          const out = await decorate(req, html);
+          page = out.html;
+          status = out.status || 200;
+        } catch (error) {
+          console.error("SEO decorate error:", error?.message || error);
+        }
+      }
       res.set("Cache-Control", "no-cache");
-      res.type("html").send(html);
+      res.status(status).type("html").send(page);
     } catch (error) {
       console.error("Page error:", error);
       res.status(500).send("Page unavailable");
     }
   };
 }
-const homePage = servePage("index.html", ["/studios.js", "/details-redesign.js", "/hero-desktop.js", "/watch-panel.js"]);
+const homePage = servePage("index.html", ["/studios.js", "/details-redesign.js", "/hero-desktop.js", "/watch-panel.js"], seo.decorate);
 
-app.get(["/", "/index.html"], homePage);
+// Real, indexable paths for the hash-routed SPA (a tiny inline script in the page maps them to #/ routes).
+app.get(["/", "/index.html", "/anime/:id", "/anime/:id/:slug", "/watch/:id", "/watch/:id/:ep"], homePage);
 
 // Homepage hero gutters: hero-desktop.js zeroes <main>'s side padding whenever the slider is
 // present (desktop/tablet widths), so the slider and every section below it touch the screen
@@ -156,7 +181,7 @@ app.get(["/accept-invite", "/accept-invite.html"], (req, res) => {
 
 // Do not expose server source / package files / source maps through static hosting.
 app.use((req, res, next) => {
-  if (/^\/(server\.js|package(-lock)?\.json)$/i.test(req.path) || /\.map$/i.test(req.path)) return res.sendStatus(404);
+  if (/^\/(server\.js|seo\.js|package(-lock)?\.json)$/i.test(req.path) || /\.map$/i.test(req.path)) return res.sendStatus(404);
   next();
 });
 
