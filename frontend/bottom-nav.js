@@ -4,15 +4,16 @@
     browse: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m16 16 4 4M8 11h6M11 8v6"/></svg>',
     search: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="7"/><path d="m16 16 4.5 4.5"/></svg>',
     categories: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>',
-    profile: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>'
+    profile: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>',
+    manga: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7v14M12 7C9 4.5 5.5 4 2.5 5v14C6 18 9.5 18.5 12 21M12 7c3-2.5 6.5-3 9.5-2v14C18 18 14.5 18.5 12 21"/><path d="M5.5 9.5c1.7-.3 3.2 0 4.5.8M5.5 13c1.7-.3 3.2 0 4.5.8M18.5 9.5c-1.7-.3-3.2 0-4.5.8M18.5 13c-1.7-.3-3.2 0-4.5.8"/></svg>'
   };
-  const links = [['home','#/','Home'],['browse','#/browse','Browse'],['search','#/search','Search'],['categories','#/categories','Categories'],['profile','#/profile','Profile']];
+  const links = [['home','#/','Home'],['browse','#/browse','Browse'],['search','#/search','Search'],['categories','#/categories','Categories'],['manga','#/manga','Manga'],['profile','#/profile','Profile']];
   const style = document.createElement('style');
   style.id = 'primeHindiBottomNavStyles';
   style.textContent = [
     'header #headerThemeToggle,header #mb,header .menu-btn,header .ib[aria-label="Search"],header button[aria-label="Search"],header a[aria-label="Search"]{display:none!important}',
 
-    '#primeHindiBottomNav{position:fixed;z-index:85;left:0;right:0;bottom:0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:2px;padding:8px 8px calc(8px + env(safe-area-inset-bottom,0px));background:rgba(12,16,26,.96);border-top:1px solid var(--ln,#26324a);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:0 -8px 28px rgba(0,0,0,.22)}',
+    '#primeHindiBottomNav{position:fixed;z-index:85;left:0;right:0;bottom:0;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:2px;padding:8px 8px calc(8px + env(safe-area-inset-bottom,0px));background:rgba(12,16,26,.96);border-top:1px solid var(--ln,#26324a);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:0 -8px 28px rgba(0,0,0,.22)}',
     '#primeHindiBottomNav a{min-width:0;min-height:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border-radius:12px;color:var(--mu,#8A94A8);font:600 10px/1.1 Inter,system-ui,sans-serif;text-decoration:none;transition:color .16s,background .16s}',
     '#primeHindiBottomNav a svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}',
     '#primeHindiBottomNav a[aria-current="page"]{color:#fff;background:rgba(47,107,255,.17)}#primeHindiBottomNav a[aria-current="page"] svg{color:var(--ac,#2F6BFF)}',
@@ -68,6 +69,7 @@
     if (route === 'home') return 'home';
     if (['browse','anime','schedule','watchlist','watch','studios'].includes(route)) return 'browse';
     if (route === 'search') return 'search';
+    if (route === 'manga') return 'manga';
     if (['genres','categories'].includes(route)) return 'categories';
     if (['profile','signin','signup','forgot-password','reset-password'].includes(route)) return 'profile';
     return 'browse';
