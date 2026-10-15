@@ -257,7 +257,47 @@ app.patch('/api/admin/users/:id/ban',admin,async(req,res)=>{const banned=!!req.b
 app.patch('/api/admin/anime/bulk',admin,async(req,res)=>{const ids=[...new Set((Array.isArray(req.body.ids)?req.body.ids:[]).map(Number))];if(!ids.length||ids.length>500||ids.some(id=>!Number.isInteger(id)||id<1))return res.status(400).json({error:'Select 1–500 valid anime IDs'});if(req.body.action==='publish'||req.body.action==='draft'){const published=req.body.action==='publish';const{rows}=await pool.query('update anime set is_published=$1 where id=any($2::int[]) returning id,is_published',[published,ids]);return res.json({count:rows.length,anime:rows})}if(req.body.action==='delete'){if(req.staffRole==='editor'||req.staffPermissions.canDelete===false)return res.status(403).json({error:'Delete permission required'});const{rows}=await pool.query('delete from anime where id=any($1::int[]) returning id',[ids]);return res.json({count:rows.length})}return res.status(400).json({error:'Invalid bulk action'})});
 app.get('/api/admin/schedule',admin,async(req,res)=>{const{rows}=await pool.query("select id,title,year,status,type,created_at from anime order by case status when 'on-air' then 1 when 'ongoing' then 2 when 'upcoming' then 3 else 4 end,created_at desc");res.json(rows)});
 app.get('/api/admin/episodes',admin,async(req,res)=>{const{rows}=await pool.query('select e.*,a.title anime_title from episodes e join anime a on a.id=e.anime_id order by a.title,e.season_number,e.episode_number');res.json(rows)});
-app.post('/api/admin/episodes/bulk',admin,async(req,res)=>{const x=req.body,animeId=Number(x.animeId),season=Math.max(1,Number(x.seasonNumber)||1),start=Math.max(1,Number(x.startEpisode)||1),count=Number(x.count);if(!Number.isInteger(animeId)||!Number.isInteger(count)||count<1||count>100)return res.status(400).json({error:'Choose an anime and 1–100 episodes'});const template=String(x.videoUrlTemplate||'').trim();if(!template||!/^https?:\/\//i.test(template.replace('{n}',String(start))))return res.status(400).json({error:'Enter a valid video URL template; use {n} for the episode number'});const check=await pool.query('select id from anime where id=$1',[animeId]);if(!check.rowCount)return res.status(404).json({error:'Anime not found'});const client=await pool.connect();try{await client.query('BEGIN');const created=[];for(let i=0;i<count;i++){const n=start+i,url=template.replaceAll('{n}',String(n)),thumb=String(x.thumbnailUrlTemplate||'').replaceAll('{n}',String(n));const{rows}=await client.query('insert into episodes(anime_id,season_number,episode_number,title,video_url,thumbnail_url,is_exclusive,is_published) values($1,$2,$3,$4,$5,$6,$7,$8) returning *',[animeId,season,n,String(x.titlePrefix||'Episode')+' '+n,'__PDI_CUSTOM__:'+url,thumb,!!x.isExclusive,x.isPublished!==false]);created.push(rows[0])}await client.query('COMMIT');res.status(201).json({count:created.length,episodes:created})}catch(e){await client.query('ROLLBACK');throw e}finally{client.release()}});
+app.post('/api/admin/episodes/bulk',admin,async(req,res)=>{
+ const x=req.body||{},animeId=Number(x.animeId),legacyCount=Number(x.count);
+ if(!Number.isSafeInteger(animeId)||animeId<1)return res.status(400).json({error:'Choose a valid anime'});
+ const check=await pool.query('select id from anime where id=$1',[animeId]);if(!check.rowCount)return res.status(404).json({error:'Anime not found'});
+ let requested=[];
+ if(Array.isArray(x.episodes)){
+  if(!x.episodes.length||x.episodes.length>100)return res.status(400).json({error:'Submit between 1 and 100 episodes'});
+  requested=x.episodes.map((e)=>({seasonNumber:Number(e.seasonNumber),episodeNumber:Number(e.episodeNumber),title:String(e.title||'').trim().slice(0,200),videoUrl:String(e.videoUrl||'').trim()}));
+ }else{
+  const seasonNumber=Number(x.seasonNumber||1),start=Number(x.startEpisode||1),count=legacyCount,template=String(x.videoUrlTemplate||'').trim();
+  if(!Number.isSafeInteger(count)||count<1||count>100||!Number.isSafeInteger(start)||start<1||!Number.isSafeInteger(seasonNumber)||seasonNumber<1)return res.status(400).json({error:'Choose valid season, starting episode and count (1–100)'});
+  if(!template||!template.includes('{n}'))return res.status(400).json({error:'URL template must contain {n}'});
+  requested=Array.from({length:count},(_,i)=>({seasonNumber,episodeNumber:start+i,title:String(x.titlePrefix||'Episode')+' '+(start+i),videoUrl:template.replaceAll('{n}',String(start+i)).trim()}));
+ }
+ const seen=new Set();
+ for(const e of requested){
+  if(!Number.isSafeInteger(e.seasonNumber)||e.seasonNumber<1||!Number.isSafeInteger(e.episodeNumber)||e.episodeNumber<1)return res.status(400).json({error:'Season and episode numbers must be positive integers'});
+  const key=e.seasonNumber+':'+e.episodeNumber;if(seen.has(key))return res.status(400).json({error:'Duplicate episode numbers in request: '+key});seen.add(key);
+  try{const u=new URL(e.videoUrl);if(!['http:','https:'].includes(u.protocol)||!u.hostname||e.videoUrl.length>4000)throw new Error();}catch{return res.status(400).json({error:'Episode '+e.episodeNumber+' has a missing or invalid HTTP(S) video URL'});}
+ }
+ const client=await pool.connect();
+ try{
+  await client.query('BEGIN');
+  await client.query('SELECT pg_advisory_xact_lock($1::int, $2::int)',[animeId,Math.min(2147483647,requested.reduce((n,e)=>Math.max(n,e.seasonNumber),1))]);
+  const seasons=[...new Set(requested.map(e=>e.seasonNumber))];
+  const existing=await client.query('select season_number,episode_number from episodes where anime_id=$1 and season_number=any($2::int[])',[animeId,seasons]);
+  const occupied=new Set(existing.rows.map(e=>Number(e.season_number)+':'+Number(e.episode_number)));
+  const results=[],created=[];
+  for(const e of requested){
+   const key=e.seasonNumber+':'+e.episodeNumber;
+   if(occupied.has(key)){results.push({seasonNumber:e.seasonNumber,episodeNumber:e.episodeNumber,status:'skipped',message:'Episode already exists'});continue;}
+   try{
+    const{rows}=await client.query('insert into episodes(anime_id,season_number,episode_number,title,video_url,thumbnail_url,is_exclusive,is_published) values($1,$2,$3,$4,$5,$6,$7,$8) returning *',[animeId,e.seasonNumber,e.episodeNumber,e.title||('Episode '+e.episodeNumber),'__PDI_CUSTOM__:'+e.videoUrl,'',!!x.isExclusive,x.isPublished!==false]);
+    created.push(rows[0]);occupied.add(key);results.push({seasonNumber:e.seasonNumber,episodeNumber:e.episodeNumber,status:'created'});
+   }catch(err){if(err.code==='23505'){results.push({seasonNumber:e.seasonNumber,episodeNumber:e.episodeNumber,status:'skipped',message:'Duplicate episode record already exists'});continue;}throw err;}
+  }
+  await client.query('COMMIT');
+  const skippedCount=results.filter(r=>r.status==='skipped').length;
+  res.status(created.length?201:200).json({count:created.length,createdCount:created.length,skippedCount,failedCount:results.filter(r=>r.status==='failed').length,episodes:created,results});
+ }catch(e){await client.query('ROLLBACK');throw e;}finally{client.release();}
+});
 app.post('/api/admin/episodes',admin,async(req,res)=>{const x=req.body;const{rows}=await pool.query('insert into episodes(anime_id,season_number,episode_number,title,video_url,thumbnail_url,is_exclusive,is_published) values($1,$2,$3,$4,$5,$6,$7,$8) returning *',[x.animeId,x.seasonNumber||1,x.episodeNumber,x.title||'',x.videoUrl,x.thumbnailUrl||'',!!x.isExclusive,x.isPublished!==false]);res.status(201).json(rows[0])});
 app.put('/api/admin/episodes/:id',admin,async(req,res)=>{const x=req.body;const{rows}=await pool.query('update episodes set anime_id=$1,season_number=$2,episode_number=$3,title=$4,video_url=$5,thumbnail_url=$6,is_exclusive=$7,is_published=$8 where id=$9 returning *',[x.animeId,x.seasonNumber||1,x.episodeNumber,x.title||'',x.videoUrl,x.thumbnailUrl||'',!!x.isExclusive,x.isPublished!==false,req.params.id]);if(!rows[0])return res.sendStatus(404);res.json(rows[0])});
 app.delete('/api/admin/episodes/:id',admin,async(req,res)=>{await pool.query('delete from episodes where id=$1',[req.params.id]);res.sendStatus(204)});
