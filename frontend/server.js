@@ -165,12 +165,6 @@ app.get("/hero-desktop.js", (req, res, next) => {
   }
 });
 
-// Dedicated Manga Reading page: serve its real UI instead of falling through to the anime SPA.
-app.get(["/manga", "/manga/"], (req, res, next) => {
-  res.set("Cache-Control", "no-cache");
-  servePage("manga.html", [], null)(req, res, next);
-});
-
 // Staff surfaces are separate pages; keep them out of the public SPA fallback.
 app.get(["/admin", "/admin.html"], (req, res, next) => {
   res.set("Cache-Control", "no-store");
