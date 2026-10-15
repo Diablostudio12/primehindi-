@@ -280,7 +280,7 @@ app.post('/api/admin/episodes/bulk',admin,async(req,res)=>{
  const client=await pool.connect();
  try{
   await client.query('BEGIN');
-  await client.query('SELECT pg_advisory_xact_lock($1::int, $2::int)',[animeId,Math.min(2147483647,requested.reduce((n,e)=>Math.max(n,e.seasonNumber),1))]);
+  await client.query('SELECT pg_advisory_xact_lock($1::int, 0)',[animeId]);
   const seasons=[...new Set(requested.map(e=>e.seasonNumber))];
   const existing=await client.query('select season_number,episode_number from episodes where anime_id=$1 and season_number=any($2::int[])',[animeId,seasons]);
   const occupied=new Set(existing.rows.map(e=>Number(e.season_number)+':'+Number(e.episode_number)));
