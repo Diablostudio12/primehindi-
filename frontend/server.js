@@ -101,8 +101,8 @@ function servePage(file, scripts, decorate) {
         html = fs.readFileSync(path.join(__dirname, file), "utf8");
         // Pin third-party CDN script (supply-chain safety) instead of "@latest".
         html = html.split("https://unpkg.com/lucide@latest").join("https://unpkg.com/lucide@0.542.0");
-        // Staff bypass for maintenance mode must load first (head), before the catalog fetch runs.
-        if (file === "index.html") html = html.replace("<head>", '<head><script src="/maintenance-staff.js"></script>');
+        // Staff bypass for maintenance mode and the 18+ fetch wrapper must load first (head), before the catalog fetch runs.
+        if (file === "index.html") html = html.replace("<head>", '<head><script src="/maintenance-staff.js"></script><script src="/adult-filter.js"></script>');
         // Root-cause repair for the mobile header logo: index.html's stylesheet opens
         // "@media(min-width:800px){footer{...}" and never closes it, so every rule after it
         // (all header-logo sizing, incl. the mobile ones) is nested inside that desktop-only
@@ -168,11 +168,11 @@ app.get("/hero-desktop.js", (req, res, next) => {
 // Staff surfaces are separate pages; keep them out of the public SPA fallback.
 app.get(["/admin", "/admin.html"], (req, res, next) => {
   res.set("Cache-Control", "no-store");
-  servePage("admin-portal.html", ["/admin-studios.js", "/admin-enhancements.js", "/admin-pro.js?v=1"])(req, res, next);
+  servePage("admin-portal.html", ["/admin-studios.js", "/admin-enhancements.js", "/admin-pro.js?v=1", "/admin-adult.js"])(req, res, next);
 });
-app.get(["/editor", "/editor.html"], (req, res) => {
+app.get(["/editor", "/editor.html"], (req, res, next) => {
   res.set("Cache-Control", "no-store");
-  res.sendFile(path.join(__dirname, "editor.html"));
+  servePage("editor.html", ["/admin-adult.js"])(req, res, next);
 });
 app.get(["/accept-invite", "/accept-invite.html"], (req, res) => {
   res.set("Cache-Control", "no-store");
