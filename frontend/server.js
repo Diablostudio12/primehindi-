@@ -138,7 +138,7 @@ function servePage(file, scripts, decorate) {
     }
   };
 }
-const homePage = servePage("index.html", ["/studios.js", "/details-redesign.js", "/hero-desktop.js", "/watch-panel.js"], seo.decorate);
+const homePage = servePage("index.html", ["/studios.js", "/details-redesign.js", "/hero-desktop.js", "/watch-panel.js", "/home-discovery.js"], seo.decorate);
 
 // Real, indexable paths for the hash-routed SPA (a tiny inline script in the page maps them to #/ routes).
 app.get(["/", "/index.html", "/anime/:id", "/anime/:id/:slug", "/watch/:id", "/watch/:id/:ep"], homePage);
