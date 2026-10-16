@@ -85,4 +85,6 @@
       }
     }, 100);
   });
+  /* The main SPA may have rendered once before this late-loaded enhancement arrived. */
+  if (typeof route === 'function' && (!location.hash || location.hash === '#' || location.hash.indexOf('#/home') === 0)) route();
 })();
