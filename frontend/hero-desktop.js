@@ -61,8 +61,8 @@
     /* Slider frame: use the full main container width instead of compensating with negative margins. */
     '@media(min-width:700px){main:has(.hs){width:100%;max-width:1480px;padding-left:0;padding-right:0;box-sizing:border-box}.hs{width:100%;margin-left:0;margin-right:0;border-radius:22px}}',
     '@media(prefers-reduced-motion:reduce){.hs-bg,.hs-l>*,.hs-p{transition:none!important;transform:none!important}.hs-sl{transition:opacity .2s!important}}',
-    /* Minimal hero: title and two actions only; the rest of the slide opens anime details. */
-    '.hs-sl{cursor:pointer}.hs-c,.hs-m,.hs-d,.hs-g,.hs-p{display:none!important}.hs-in{justify-content:flex-start}.hs-l{max-width:760px}.hs-t{margin-bottom:18px}',
+    /* Hide extra slide details and poster without altering the original animated transitions. */
+    '.hs-c,.hs-m,.hs-d,.hs-g,.hs-p{display:none!important}.hs-sl{cursor:pointer}.hs-l{max-width:760px}',
     /* ---------- sections / cards ---------- */
     '.pn-sec{margin:30px 0 0}.pn-sh{display:flex;justify-content:space-between;align-items:baseline;margin:0 0 14px}.pn-sh h2{font:700 20px Sora,Inter,sans-serif}.pn-sh a{color:var(--mu);font-size:13px;transition:color .2s}.pn-sh a:hover{color:#fff}',
     '.pn-g{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;margin:0 -18px;padding:2px 18px 10px}.pn-g::-webkit-scrollbar{display:none}',
