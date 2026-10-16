@@ -61,7 +61,6 @@
     /* Slider frame: use the full main container width instead of compensating with negative margins. */
     '@media(min-width:700px){main:has(.hs){width:100%;max-width:1480px;padding-left:0;padding-right:0;box-sizing:border-box}.hs{width:100%;margin-left:0;margin-right:0;border-radius:22px}}',
     '@media(prefers-reduced-motion:reduce){.hs-bg,.hs-l>*,.hs-p{transition:none!important;transform:none!important}.hs-sl{transition:opacity .2s!important}}',
-    /* Hide extra slide details and poster without altering the original animated transitions. */
     '.hs-c,.hs-m,.hs-d,.hs-g,.hs-p{display:none!important}.hs-sl{cursor:pointer}.hs-l{max-width:760px}',
     /* ---------- sections / cards ---------- */
     '.pn-sec{margin:30px 0 0}.pn-sh{display:flex;justify-content:space-between;align-items:baseline;margin:0 0 14px}.pn-sh h2{font:700 20px Sora,Inter,sans-serif}.pn-sh a{color:var(--mu);font-size:13px;transition:color .2s}.pn-sh a:hover{color:#fff}',
@@ -142,7 +141,7 @@
       '<div class="hs-b"><a class="p" href="#/watch/' + a.i + '/1">&#9654; Watch Now</a><a href="#/watchlist">&#128278; Watchlist</a></div>' +
       '</div></div></article>';
   }
-  function heroHtml(g) {
+    function heroHtml(g) {
     var L = g.filter(function (a) { return a.bannerUrl || a.posterUrl; }).slice(0, 6), n = L.length;
     if (!n) return '';
     var many = n > 1;
@@ -168,7 +167,6 @@
       var slide = e.target.closest('.hs-sl');
       if (slide && slide.dataset.animeId) { e.preventDefault(); location.hash = '#/anime/' + encodeURIComponent(slide.dataset.animeId); }
     });
-
     if (n < 2) return;
     var dots = [].slice.call(root.querySelectorAll('.hs-dots button')), bar = root.querySelector('.hs-pr i'), cnt = root.querySelector('.hs-n b'), cur = 0;
     function restart() { if (!bar) return; bar.style.animation = 'none'; void bar.offsetWidth; bar.style.animation = ''; }
