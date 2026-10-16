@@ -2,6 +2,7 @@
    Smooth crossfade hero slider, clean home sections, "View all" pages, desktop header search + avatar,
    notifications docked in header, no bottom tabs on desktop, footer fit. Additive: index.html untouched. */
 (function () {
+  /* Prime Hindi hero slider: minimal controls and selected-anime details panel. */
   'use strict';
   if (window.__pnPolish || typeof V === 'undefined' || typeof A === 'undefined') return;
   window.__pnPolish = true;
