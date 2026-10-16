@@ -137,11 +137,11 @@
   function slideHtml(a, k) {
     var bg = a.bannerUrl || a.posterUrl, poster = a.posterUrl || a.bannerUrl;
     return '<article class="hs-sl' + (k === 0 ? ' on' : '') + '" data-anime-id="' + esc(a.i) + '" tabindex="0" role="button" aria-label="View details for ' + esc(a.t) + '" aria-haspopup="dialog" aria-hidden="' + (k === 0 ? 'false' : 'true') + '">' +
-      '<div class="hs-bg" style="background-image:url(\\'' + url(bg) + '\\')"></div><div class="hs-sh"></div>' +
+      '<div class="hs-bg" style="background-image:url(&quot;' + url(bg) + '&quot;)"></div><div class="hs-sh"></div>' +
       '<div class="hs-in"><div class="hs-l">' +
       '<div class="hs-t">' + esc(a.t) + '</div>' +
       '<div class="hs-b"><a class="p" data-hero-watch href="#/watch/' + encodeURIComponent(a.i) + '/1">&#9654; Watch Now</a><button type="button" data-wl data-anime-id="' + esc(a.i) + '">&#128278; Watchlist</button></div>' +
-      '</div>' + (poster ? '<div class="hs-p" style="background-image:url(\\'' + url(poster) + '\\')"></div>' : '') + '</div></article>';
+      '</div>' + (poster ? '<div class="hs-p" style="background-image:url(&quot;' + url(poster) + '&quot;)"></div>' : '') + '</div></article>';
   }
   function heroHtml(g) {
     var L = g.filter(function (a) { return a.bannerUrl || a.posterUrl; }).slice(0, 6), n = L.length;
