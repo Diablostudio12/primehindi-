@@ -61,6 +61,9 @@
     /* Slider frame: use the full main container width instead of compensating with negative margins. */
     '@media(min-width:700px){main:has(.hs){width:100%;max-width:1480px;padding-left:0;padding-right:0;box-sizing:border-box}.hs{width:100%;margin-left:0;margin-right:0;border-radius:22px}}',
     '@media(prefers-reduced-motion:reduce){.hs-bg,.hs-l>*,.hs-p{transition:none!important;transform:none!important}.hs-sl{transition:opacity .2s!important}}',
+    '.hs-sl{cursor:pointer}.hs-sl:focus-visible{outline:3px solid #a78bfa;outline-offset:-5px}',
+    '.hs-b button{display:inline-flex;align-items:center;gap:8px;padding:11px 22px;border-radius:999px;font:600 14px Inter,sans-serif;color:#fff;border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.08);cursor:pointer;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}.hs-b button:hover{border-color:#a78bfa}',
+    '.ph-hero-dialog{position:fixed;inset:0;z-index:10050;background:rgba(3,6,14,.82);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:16px}.ph-hero-dialog[hidden]{display:none}.ph-hero-dialog__panel{position:relative;width:min(920px,100%);max-height:min(92dvh,900px);overflow:auto;background:var(--bg);border:1px solid var(--ln);border-radius:20px;box-shadow:0 24px 90px #000a}.ph-hero-dialog__close{position:sticky;top:8px;float:right;z-index:5;margin:8px 8px -52px 0;width:40px;height:40px;border:1px solid var(--ln);border-radius:50%;background:rgba(17,22,34,.94);color:var(--tx);font-size:24px;cursor:pointer}.ph-hero-dialog__content{padding:0 16px 18px}.ph-hero-dialog__content .dx{margin:0!important}.ph-hero-dialog__content .dx-card{margin-left:0;margin-right:0}@media(max-width:600px){.ph-hero-dialog{padding:0;align-items:stretch}.ph-hero-dialog__panel{max-height:100dvh;border-radius:0;border-left:0;border-right:0}.ph-hero-dialog__content{padding:0 12px 20px}}',
     /* ---------- sections / cards ---------- */
     '.pn-sec{margin:30px 0 0}.pn-sh{display:flex;justify-content:space-between;align-items:baseline;margin:0 0 14px}.pn-sh h2{font:700 20px Sora,Inter,sans-serif}.pn-sh a{color:var(--mu);font-size:13px;transition:color .2s}.pn-sh a:hover{color:#fff}',
     '.pn-g{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;margin:0 -18px;padding:2px 18px 10px}.pn-g::-webkit-scrollbar{display:none}',
@@ -133,23 +136,12 @@
   /* ---------- hero ---------- */
   function slideHtml(a, k) {
     var bg = a.bannerUrl || a.posterUrl, poster = a.posterUrl || a.bannerUrl;
-    var status = a.s === 'Completed' ? 'COMPLETED' : a.s === 'Upcoming' ? 'UPCOMING' : 'ONGOING';
-    var meta = [];
-    if (a.type) meta.push(String(a.type).toUpperCase());
-    if (a.n > 0) meta.push(a.n + (a.n === 1 ? ' Episode' : ' Episodes'));
-    if (a.y) meta.push(a.y);
-    if (a.studioName) meta.push(a.studioName);
-    var d = syn(a);
-    return '<article class="hs-sl' + (k === 0 ? ' on' : '') + '" aria-hidden="' + (k === 0 ? 'false' : 'true') + '">' +
-      '<div class="hs-bg" style="background-image:url(\'' + url(bg) + '\')"></div><div class="hs-sh"></div>' +
+    return '<article class="hs-sl' + (k === 0 ? ' on' : '') + '" data-anime-id="' + esc(a.i) + '" tabindex="0" role="button" aria-label="View details for ' + esc(a.t) + '" aria-haspopup="dialog" aria-hidden="' + (k === 0 ? 'false' : 'true') + '">' +
+      '<div class="hs-bg" style="background-image:url(\\'' + url(bg) + '\\')"></div><div class="hs-sh"></div>' +
       '<div class="hs-in"><div class="hs-l">' +
-      '<div class="hs-c"><span class="a">' + status + '</span><span class="b">HD</span><span class="c">SUB</span>' + (a.hindiDub ? '<span class="d">HINDI DUB</span>' : '') + '</div>' +
       '<div class="hs-t">' + esc(a.t) + '</div>' +
-      (meta.length ? '<div class="hs-m">' + meta.map(function (m) { return '<span>' + esc(m) + '</span>'; }).join('') + '</div>' : '<div class="hs-m"></div>') +
-      (d ? '<p class="hs-d">' + esc(d) + '</p>' : '<p class="hs-d" style="display:none"></p>') +
-      '<div class="hs-g">' + (a.genres || []).slice(0, 4).map(function (g) { return '<span>' + esc(g) + '</span>'; }).join('') + '</div>' +
-      '<div class="hs-b"><a class="p" href="#/watch/' + a.i + '/1">&#9654; Watch Now</a><a href="#/anime/' + a.i + '">&#9432; More Info</a><a href="#/watchlist">&#128278; Watchlist</a></div>' +
-      '</div>' + (poster ? '<div class="hs-p" style="background-image:url(\'' + url(poster) + '\')"></div>' : '') + '</div></article>';
+      '<div class="hs-b"><a class="p" data-hero-watch href="#/watch/' + encodeURIComponent(a.i) + '/1">&#9654; Watch Now</a><button type="button" data-wl data-anime-id="' + esc(a.i) + '">&#128278; Watchlist</button></div>' +
+      '</div>' + (poster ? '<div class="hs-p" style="background-image:url(\\'' + url(poster) + '\\')"></div>' : '') + '</div></article>';
   }
   function heroHtml(g) {
     var L = g.filter(function (a) { return a.bannerUrl || a.posterUrl; }).slice(0, 6), n = L.length;
@@ -268,6 +260,72 @@
     var box = document.getElementById('pdiNotificationWidget'), h = document.querySelector('header'), acc = document.getElementById('accountBtn');
     if (box && h && acc && box.parentNode !== h) h.insertBefore(box, acc);
   }
+
+  function ensureHeroDialog() {
+    var dialog = document.getElementById('phHeroInfoDialog');
+    if (dialog) return dialog;
+    dialog = document.createElement('div');
+    dialog.id = 'phHeroInfoDialog';
+    dialog.className = 'ph-hero-dialog';
+    dialog.hidden = true;
+    dialog.setAttribute('role', 'dialog');
+    dialog.setAttribute('aria-modal', 'true');
+    dialog.setAttribute('aria-label', 'Anime information');
+    dialog.innerHTML = '<div class="ph-hero-dialog__panel"><button type="button" class="ph-hero-dialog__close" aria-label="Close anime information">&#215;</button><div class="ph-hero-dialog__content"></div></div>';
+    document.body.appendChild(dialog);
+    dialog.addEventListener('click', function (e) {
+      if (e.target === dialog || (e.target.closest && e.target.closest('.ph-hero-dialog__close'))) closeHeroDialog();
+    });
+    dialog.querySelector('.ph-hero-dialog__panel').addEventListener('click', function (e) {
+      if (e.target.closest && e.target.closest('a[href^="#/watch/"]')) closeHeroDialog();
+    });
+    return dialog;
+  }
+  function closeHeroDialog() {
+    var dialog = document.getElementById('phHeroInfoDialog');
+    if (!dialog) return;
+    dialog.hidden = true;
+    document.body.style.overflow = '';
+  }
+  function openHeroDialog(id) {
+    var a = A.find(function (item) { return String(item.i) === String(id); });
+    if (!a || !V || typeof V.anime !== 'function') return;
+    var dialog = ensureHeroDialog(), content = dialog.querySelector('.ph-hero-dialog__content');
+    content.innerHTML = '';
+    try {
+      content.innerHTML = V.anime(a.i);
+      dialog.hidden = false;
+      document.body.style.overflow = 'hidden';
+      if (typeof wire === 'function') wire();
+      if (typeof wireComments === 'function') wireComments();
+      var close = dialog.querySelector('.ph-hero-dialog__close');
+      if (close) close.focus({ preventScroll: true });
+    } catch (e) {
+      console.warn('Could not open anime information panel', e);
+      content.innerHTML = '<p class="mu" style="padding:24px">Anime details could not be loaded. Please try again.</p>';
+      dialog.hidden = false;
+      document.body.style.overflow = 'hidden';
+    }
+  }
+  document.addEventListener('click', function (e) {
+    var root = e.target.closest && e.target.closest('.hs');
+    if (!root) return;
+    var control = e.target.closest('a,button,input,select,textarea,.hs-ar,.hs-dots');
+    if (control) {
+      if (control.matches('[data-wl]')) e.stopPropagation();
+      return;
+    }
+    var slide = e.target.closest('.hs-sl[data-anime-id]');
+    if (slide) openHeroDialog(slide.dataset.animeId);
+  });
+  document.addEventListener('keydown', function (e) {
+    var slide = e.target.closest && e.target.closest('.hs-sl[data-anime-id]');
+    if (slide && (e.key === 'Enter' || e.key === ' ') && !e.target.closest('a,button')) {
+      e.preventDefault();
+      openHeroDialog(slide.dataset.animeId);
+    }
+    if (e.key === 'Escape') closeHeroDialog();
+  });
 
   function scan() {
     var r = document.querySelector('.hs');
