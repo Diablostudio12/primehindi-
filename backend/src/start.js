@@ -27,10 +27,12 @@ pg.Pool.prototype.query = function patchedQuery(config, ...rest) {
 const originalListen = express.application.listen;
 express.application.listen = function patchedListen(...args) {
   express.application.listen = originalListen;
+  // Fail closed: never start the public server if the security layer cannot mount.
   try {
     registerSecurity(this);
   } catch (e) {
-    console.error('SECURITY LAYER FAILED TO LOAD:', e.message);
+    console.error('SECURITY LAYER FAILED TO LOAD; refusing to start:', e.message);
+    throw e;
   }
   try {
     registerStudios(this);
