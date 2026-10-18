@@ -140,6 +140,8 @@ export function registerSecurity(app) {
       req.secUser = { id: u.id, email: String(u.email || '').toLowerCase(), role: u.role };
     } catch (e) {
       console.error('[security] session gate error:', e.message);
+      // Fail closed when a valid token cannot be checked against the database.
+      return res.status(503).json({ error: 'Authentication service temporarily unavailable' });
     }
     next();
   });
