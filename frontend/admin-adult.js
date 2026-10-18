@@ -68,3 +68,30 @@
     return origFetch(input, init);
   };
 })();
+
+/* Admin portal: restore the "Manga Library" sidebar button.
+   admin-pro.js regroups the sidebar and drops any tab it does not list, so Manga Library vanished. Additive. */
+(function () {
+  'use strict';
+  if (window.__pdiMangaNav) return;
+  window.__pdiMangaNav = true;
+  function add() {
+    var nav = document.querySelector('#sidebar .nav');
+    if (!nav || nav.querySelector('button[data-tab="manga"]')) return;
+    var ref = nav.querySelector('button[data-tab="studios"]') || nav.querySelector('button[data-tab="episodes"]');
+    var b = document.createElement('button');
+    b.dataset.tab = 'manga';
+    b.dataset.grp = 'Catalog';
+    b.innerHTML = '<span class="ico"><i data-lucide="book-open"></i></span>Manga Library';
+    b.addEventListener('click', function () { if (window.switchTab) window.switchTab('manga'); });
+    if (ref && ref.nextSibling) nav.insertBefore(b, ref.nextSibling); else nav.appendChild(b);
+    if (window.lucide) window.lucide.createIcons();
+  }
+  function start() {
+    var nav = document.querySelector('#sidebar .nav');
+    if (!nav) return;
+    add();
+    new MutationObserver(add).observe(nav, { childList: true });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
+})();
