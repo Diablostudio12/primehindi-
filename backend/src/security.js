@@ -342,7 +342,7 @@ export function registerSecurity(app) {
       rows.map((r) => [r.id, r.title, r.slug, r.type, r.year, r.status, r.is_published, String(r.poster_url || '').startsWith('data:') ? '[embedded image]' : r.poster_url, r.created_at.toISOString()]));
   });
 
-  mountAt(app, pre, (s) => { const i = s.findIndex((l) => l.name === 'expressInit'); return i < 0 ? -1 : i + 1; });
+  mountAt(app, pre, (s) => { const i = s.findIndex((l) => l.name === 'expressInit'); return i < 0 ? 0 : i + 1; });
   mountAt(app, post, (s) => s.findIndex((l) => l.route));
   console.log('[security] hardening layer active');
 }
