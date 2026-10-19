@@ -7,6 +7,7 @@ import { registerSecurity } from './security.js';
 import { registerEngagement } from './engagement.js';
 import { registerAdult } from './adult.js';
 import { registerManga } from './manga.js';
+import { registerDownloads } from './downloads.js';
 
 // The built-in demo catalog used to be re-inserted on every start, so demo anime
 // deleted from the admin panel kept coming back. Skip only that exact seed insert.
@@ -53,6 +54,11 @@ express.application.listen = function patchedListen(...args) {
     registerManga(this);
   } catch (e) {
     console.error('Manga feature failed to load:', e.message);
+  }
+  try {
+    registerDownloads(this);
+  } catch (e) {
+    console.error('Download feature failed to load:', e.message);
   }
   return originalListen.apply(this, args);
 };

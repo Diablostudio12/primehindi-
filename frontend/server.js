@@ -138,7 +138,7 @@ function servePage(file, scripts, decorate) {
     }
   };
 }
-const homePage = servePage("index.html", ["/studios.js", "/details-redesign.js", "/hero-desktop.js", "/watch-panel.js", "/home-discovery.js"], seo.decorate);
+const homePage = servePage("index.html", ["/studios.js", "/details-redesign.js", "/hero-desktop.js", "/watch-panel.js", "/home-discovery.js", "/download-button.js"], seo.decorate);
 
 // Real, indexable paths for the hash-routed SPA (a tiny inline script in the page maps them to #/ routes).
 app.get(["/", "/index.html", "/anime/:id", "/anime/:id/:slug", "/watch/:id", "/watch/:id/:ep"], homePage);
@@ -168,11 +168,11 @@ app.get("/hero-desktop.js", (req, res, next) => {
 // Staff surfaces are separate pages; keep them out of the public SPA fallback.
 app.get(["/admin", "/admin.html"], (req, res, next) => {
   res.set("Cache-Control", "no-store");
-  servePage("admin-portal.html", ["/admin-studios.js", "/admin-enhancements.js", "/admin-pro.js?v=1", "/admin-adult.js", "/admin-genres.js"])(req, res, next);
+  servePage("admin-portal.html", ["/admin-studios.js", "/admin-enhancements.js", "/admin-pro.js?v=1", "/admin-adult.js", "/admin-genres.js", "/admin-download.js"])(req, res, next);
 });
 app.get(["/editor", "/editor.html"], (req, res, next) => {
   res.set("Cache-Control", "no-store");
-  servePage("editor.html", ["/admin-adult.js"])(req, res, next);
+  servePage("editor.html", ["/admin-adult.js", "/admin-download.js"])(req, res, next);
 });
 app.get(["/accept-invite", "/accept-invite.html"], (req, res) => {
   res.set("Cache-Control", "no-store");
