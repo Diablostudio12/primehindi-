@@ -28,6 +28,22 @@ app.use((req, res, next) => {
   next();
 });
 
+// 301: any other host (old Railway domain, www) -> the main domain from SITE_URL.
+// Does nothing while SITE_URL is unset. /api and non-GET requests are never redirected.
+const SITE_ORIGIN = (() => {
+  try {
+    return process.env.SITE_URL ? new URL(process.env.SITE_URL).origin : "";
+  } catch {
+    return "";
+  }
+})();
+app.use((req, res, next) => {
+  if (!SITE_ORIGIN || !/^(GET|HEAD)$/.test(req.method) || req.path.startsWith("/api")) return next();
+  const host = String(req.get("host") || "").toLowerCase();
+  if (!host || host === new URL(SITE_ORIGIN).host || host === "healthcheck.railway.app") return next();
+  return res.redirect(301, SITE_ORIGIN + req.originalUrl);
+});
+
 // SEO: keep API / staff pages out of search results (X-Robots-Tag), serve robots.txt + sitemap.xml.
 app.use(seo.robotsHeader);
 app.get("/robots.txt", seo.robots);
@@ -37,6 +53,8 @@ app.get("/sitemap.xml", (req, res) => {
     res.status(500).type("text/plain").send("Sitemap unavailable");
   });
 });
+// 301 to the canonical page URL (/index.html -> /, /anime/ID -> /anime/ID/slug, /watch/ID -> /watch/ID/1).
+app.use(seo.redirects);
 
 app.use("/api", async (req, res) => {
   try {
@@ -180,13 +198,21 @@ app.get(["/accept-invite", "/accept-invite.html"], (req, res) => {
 });
 
 // Do not expose server source / package files / source maps through static hosting.
+// 404.html is only ever served as the response of the 404 handler below.
 app.use((req, res, next) => {
-  if (/^\/(server\.js|seo\.js|package(-lock)?\.json)$/i.test(req.path) || /\.map$/i.test(req.path)) return res.sendStatus(404);
+  if (/^\/(server\.js|seo\.js|404(\.html)?|package(-lock)?\.json)$/i.test(req.path) || /\.map$/i.test(req.path)) return res.sendStatus(404);
   next();
 });
 
 app.use(express.static(__dirname, { extensions: ["html"], index: false }));
-app.use(homePage);
+
+// Custom 404 page (real 404 status, noindex) for every path that is not a page, asset or API route.
+app.use((req, res) => {
+  res.set("Cache-Control", "no-cache");
+  res.status(404).sendFile(path.join(__dirname, "404.html"), (error) => {
+    if (error && !res.headersSent) res.status(404).type("text/plain").send("Page not found");
+  });
+});
 
 app.listen(port, "0.0.0.0", () => {
   console.log("Primordial Streams running on " + port);

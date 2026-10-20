@@ -31,8 +31,15 @@ const PATH_TO_HASH_SHIM =
   "if(!location.hash&&p[1]&&/^\\d+$/.test(p[1])){var h=p[0]==='anime'?'#/anime/'+p[1]:p[0]==='watch'?'#/watch/'+p[1]+'/'+(/^\\d+$/.test(p[2]||'')?p[2]:'1'):'';" +
   "if(h)history.replaceState(null,'',location.pathname+location.search+h)}})()</script>";
 
+// Server-rendered content for crawlers that do not run JavaScript (the SPA draws everything
+// client-side). It sits off-screen and is removed after the SPA has loaded, so visitors never see it.
+const PRE_STYLE = "position:absolute;left:-10000px;top:0;width:1px;height:1px;overflow:hidden";
+const PRE_SCRIPT =
+  "<script>addEventListener('load',function(){setTimeout(function(){var e=document.getElementById('pdi-prerender');if(e&&e.parentNode)e.parentNode.removeChild(e)},4000)})</script>";
+const wrapPre = (inner) => '<div id="pdi-prerender" style="' + PRE_STYLE + '">' + inner + "</div>" + PRE_SCRIPT;
+
 export function createSeo({ backendUrl, secret }) {
-  let cache = { at: 0, rows: [], settings: {} };
+  let cache = { at: 0, rows: [], settings: {}, logo: "" };
   let inflight = null;
 
   async function getJson(p) {
@@ -48,11 +55,12 @@ export function createSeo({ backendUrl, secret }) {
     if (!inflight) {
       inflight = (async () => {
         try {
-          const [rows, settings] = await Promise.all([
+          const [rows, settings, branding] = await Promise.all([
             getJson("/api/anime"),
-            getJson("/api/site-settings").catch(() => ({}))
+            getJson("/api/site-settings").catch(() => ({})),
+            getJson("/api/branding").catch(() => ({}))
           ]);
-          if (Array.isArray(rows)) cache = { at: Date.now(), rows, settings: settings || {} };
+          if (Array.isArray(rows)) cache = { at: Date.now(), rows, settings: settings || {}, logo: (branding && branding.logoUrl) || "" };
         } catch (e) {
           console.error("SEO data error:", e?.message || e);
           cache = { ...cache, at: Date.now() - TTL + 60000 }; // keep stale data, retry in 1 min
@@ -69,6 +77,7 @@ export function createSeo({ backendUrl, secret }) {
   const animeSlug = (x) => x.slug || slugify(x.title) || "anime";
   const absolute = (u, base) => {
     if (!u) return "";
+    if (/^data:/i.test(u)) return "";
     try {
       return new URL(u, base + "/").toString();
     } catch {
@@ -76,6 +85,10 @@ export function createSeo({ backendUrl, secret }) {
     }
   };
   const epNumber = (e) => Number(e?.episodeNumber ?? e?.episode_number);
+  const qs = (req) => {
+    const i = req.originalUrl.indexOf("?");
+    return i < 0 ? "" : req.originalUrl.slice(i);
+  };
 
   function headTags({ title, desc, canonical, image, type, robots, ld, site }) {
     const t = [];
@@ -97,13 +110,17 @@ export function createSeo({ backendUrl, secret }) {
     return t.join("\n");
   }
 
+  const animeLink = (x) => '<a href="/anime/' + x.id + "/" + animeSlug(x) + '">' + esc(x.title) + "</a>";
+
   // Called by servePage for every HTML page; returns { html, status }.
   async function decorate(req, html) {
     const base = baseUrl(req);
-    const { rows, settings } = await data();
+    const { rows, settings, logo } = await data();
     const site = settings.site_name || "Prime Hindi";
+    const defaultImage = absolute(logo, base);
     const m = req.path.match(/^\/(anime|watch)\/(\d+)(?:\/([^/]+))?\/?$/);
     let tags;
+    let pre = "";
     let status = 200;
 
     if (req.path === "/" || req.path === "/index.html") {
@@ -113,12 +130,18 @@ export function createSeo({ backendUrl, secret }) {
         title,
         desc,
         canonical: base + "/",
+        image: defaultImage,
         site,
         ld: [
           { "@context": "https://schema.org", "@type": "WebSite", name: site, url: base + "/", inLanguage: "hi" },
-          { "@context": "https://schema.org", "@type": "Organization", name: site, url: base + "/" }
+          { "@context": "https://schema.org", "@type": "Organization", name: site, url: base + "/", ...(defaultImage && { logo: defaultImage }) }
         ]
       });
+      pre = wrapPre(
+        "<h1>" + esc(title) + "</h1><p>" + esc(desc) + "</p><ul>" +
+          rows.slice(0, 200).map((r) => "<li>" + animeLink(r) + "</li>").join("") +
+          "</ul>"
+      );
     } else if (m) {
       const x = rows.find((r) => Number(r.id) === Number(m[2]));
       const ep = m[1] === "watch" ? Number(m[3]) || 1 : 0;
@@ -136,7 +159,7 @@ export function createSeo({ backendUrl, secret }) {
       } else {
         const dub = x.hindi_dub ? " Hindi Dubbed" : "";
         const slug = animeSlug(x);
-        const image = absolute(x.banner_url || x.poster_url, base);
+        const image = absolute(x.banner_url || x.poster_url, base) || defaultImage;
         const animeUrl = base + "/anime/" + x.id + "/" + slug;
         const genres = Array.isArray(x.genres) ? x.genres : [];
         const series = {
@@ -160,6 +183,18 @@ export function createSeo({ backendUrl, secret }) {
             site,
             ld: [series]
           });
+          const epLinks = episodes
+            .map((e) => epNumber(e))
+            .filter((n) => n > 0)
+            .map((n) => '<li><a href="/watch/' + x.id + "/" + n + '">' + esc(x.title) + " Episode " + n + "</a></li>")
+            .join("");
+          pre = wrapPre(
+            "<h1>" + esc(x.title + dub) + "</h1>" +
+              (x.description ? "<p>" + esc(trunc(x.description, 600)) + "</p>" : "") +
+              (genres.length ? "<p>" + esc(genres.join(", ")) + "</p>" : "") +
+              (epLinks ? "<ul>" + epLinks + "</ul>" : "") +
+              '<p><a href="/">' + esc(site) + "</a></p>"
+          );
         } else {
           const watchUrl = base + "/watch/" + x.id + "/" + ep;
           tags = headTags({
@@ -182,6 +217,11 @@ export function createSeo({ backendUrl, secret }) {
               }
             ]
           });
+          pre = wrapPre(
+            "<h1>" + esc(x.title + " Episode " + ep + dub) + "</h1><p>" +
+              esc("Watch " + x.title + " episode " + ep + dub + " online in HD on " + site + ".") +
+              '</p><p><a href="' + esc("/anime/" + x.id + "/" + slug) + '">' + esc(x.title) + "</a></p>"
+          );
         }
       }
     } else {
@@ -199,7 +239,30 @@ export function createSeo({ backendUrl, secret }) {
     out = /<title>[^<]*<\/title>/i.test(out)
       ? out.replace(/<title>[^<]*<\/title>/i, () => tags)
       : out.replace("</head>", () => tags + "</head>");
+    if (pre) out = out.replace(/<body[^>]*>/i, (b) => b + pre);
     return { html: out, status };
+  }
+
+  // 301 redirects to the one canonical URL of a page: /index.html -> /, /anime/ID -> /anime/ID/slug,
+  // /watch/ID -> /watch/ID/1, wrong or missing slug, trailing slash. Unknown IDs fall through.
+  async function redirects(req, res, next) {
+    try {
+      if (!/^(GET|HEAD)$/.test(req.method)) return next();
+      if (req.path === "/index.html") return res.redirect(301, "/" + qs(req));
+      const m = req.path.match(/^\/(anime|watch)\/(\d+)(?:\/([^/]+))?\/?$/);
+      if (!m) return next();
+      const { rows } = await data();
+      const x = rows.find((r) => Number(r.id) === Number(m[2]));
+      if (!x) return next();
+      let want;
+      if (m[1] === "anime") want = "/anime/" + x.id + "/" + animeSlug(x);
+      else want = "/watch/" + x.id + "/" + (/^\d+$/.test(m[3] || "") ? Number(m[3]) : 1);
+      if (req.path !== want) return res.redirect(301, want + qs(req));
+      return next();
+    } catch (e) {
+      console.error("Redirect error:", e?.message || e);
+      return next();
+    }
   }
 
   async function sitemap(req, res) {
@@ -246,5 +309,5 @@ export function createSeo({ backendUrl, secret }) {
     next();
   }
 
-  return { decorate, sitemap, robots, robotsHeader };
+  return { decorate, sitemap, robots, robotsHeader, redirects };
 }
