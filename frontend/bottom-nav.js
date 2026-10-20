@@ -13,22 +13,46 @@
   style.textContent = [
     'header #headerThemeToggle,header #mb,header .menu-btn,header .ib[aria-label="Search"],header button[aria-label="Search"],header a[aria-label="Search"]{display:none!important}',
 
-    '#primeHindiBottomNav{position:fixed;z-index:85;left:0;right:0;bottom:0;margin:0!important;box-sizing:border-box;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:2px;padding:8px 8px calc(8px + env(safe-area-inset-bottom,0px));background:rgba(12,16,26,.96);border-top:1px solid var(--ln,#26324a);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:0 -8px 28px rgba(0,0,0,.22)}',
-    '#primeHindiBottomNav a{min-width:0;min-height:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border-radius:12px;color:var(--mu,#8A94A8);font:600 10px/1.1 Inter,system-ui,sans-serif;text-decoration:none;transition:color .16s,background .16s}',
-    '#primeHindiBottomNav a svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}',
-    '#primeHindiBottomNav a[aria-current="page"]{color:#fff;background:rgba(47,107,255,.17)}#primeHindiBottomNav a[aria-current="page"] svg{color:var(--ac,#2F6BFF)}',
+    '#primeHindiBottomNav{position:fixed;z-index:85;left:0;right:0;bottom:0;margin:0!important;box-sizing:border-box;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:0;padding:8px 8px calc(8px + env(safe-area-inset-bottom,0px));background:rgba(12,16,26,.96);border-top:1px solid var(--ln,#26324a);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:0 -8px 28px rgba(0,0,0,.22)}',
+    '#primeHindiBottomNav a{position:relative;z-index:1;min-width:0;min-height:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border-radius:16px;color:var(--mu,#8A94A8);font:600 10px/1.1 Inter,system-ui,sans-serif;text-decoration:none;transition:color .25s;-webkit-tap-highlight-color:transparent}',
+    '#primeHindiBottomNav a svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;transition:transform .45s cubic-bezier(.34,1.56,.64,1)}',
+    '#primeHindiBottomNav a[aria-current="page"]{color:#fff}#primeHindiBottomNav a[aria-current="page"] svg{transform:translateY(-2px) scale(1.14)}',
+    '#primeHindiBottomNav .pn-blobs{position:absolute;left:0;top:0;right:0;bottom:0;z-index:0;pointer-events:none;filter:url(#pnGoo)}',
+    '#primeHindiBottomNav .pn-blob{position:absolute;left:0;top:0;width:0;height:48px;border-radius:16px;background:linear-gradient(135deg,var(--ac,#2F6BFF),#7B4DFF);box-shadow:0 6px 18px rgba(47,107,255,.35);will-change:transform,width}',
+    '#primeHindiBottomNav.pn-blob-on .pn-blob{transition:transform .5s cubic-bezier(.34,1.45,.5,1),width .5s ease,height .5s ease}',
+    '#primeHindiBottomNav.pn-blob-on .pn-blob.pn-tail{transition:transform .85s cubic-bezier(.2,.8,.2,1),width .85s ease,height .85s ease}',
     'body{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}body.pn-watch{padding-bottom:0}body.pn-watch #primeHindiBottomNav{display:none}body.pn-watch main{padding-bottom:24px}#app{scroll-margin-bottom:90px}',
     '#pnBrowseFilters{display:flex;gap:8px;overflow-x:auto;padding:2px 0 8px;margin:10px 0 16px;scrollbar-width:none}#pnBrowseFilters::-webkit-scrollbar{display:none}',
     '#pnBrowseFilters button{flex:0 0 auto;border:1px solid var(--ln);background:var(--cd);color:var(--sv);border-radius:999px;padding:9px 14px;font:600 12px Inter;cursor:pointer}#pnBrowseFilters button[aria-pressed="true"]{background:var(--ac);border-color:var(--ac);color:white}',
     '#pnBrowseResults{min-height:120px}@media(min-width:760px){#primeHindiBottomNav{left:50%;right:auto;transform:translateX(-50%);width:min(520px,calc(100% - 32px));border:1px solid var(--ln);border-bottom:0;border-radius:18px 18px 0 0}body{padding-bottom:calc(76px + env(safe-area-inset-bottom,0px))}}',
-    '@media(prefers-reduced-motion:reduce){#primeHindiBottomNav a{transition:none}}'
+    '@media(prefers-reduced-motion:reduce){#primeHindiBottomNav a,#primeHindiBottomNav a svg,#primeHindiBottomNav.pn-blob-on .pn-blob{transition:none!important}}'
   ].join('');
   document.head.appendChild(style);
   const nav = document.createElement('nav');
   nav.id = 'primeHindiBottomNav';
   nav.setAttribute('aria-label','Main navigation');
-  nav.innerHTML = links.map(([key,href,label]) => '<a href="'+href+'" data-pn-tab="'+key+'">'+icons[key]+'<span>'+label+'</span></a>').join('');
+  nav.innerHTML =
+    '<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs><filter id="pnGoo" x="-20%" y="-60%" width="140%" height="220%"><feGaussianBlur in="SourceGraphic" stdDeviation="7" result="b"/><feColorMatrix in="b" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 20 -9"/></filter></defs></svg>' +
+    '<span class="pn-blobs" aria-hidden="true"><i class="pn-blob pn-main"></i><i class="pn-blob pn-tail"></i></span>' +
+    links.map(([key,href,label]) => '<a href="'+href+'" data-pn-tab="'+key+'">'+icons[key]+'<span>'+label+'</span></a>').join('');
   document.body.appendChild(nav);
+
+  // Morphing blob: two blobs travel to the active tab at different speeds; the goo filter merges them into a stretching, liquid shape.
+  const blobs = nav.querySelectorAll('.pn-blob');
+  let blobReady = false;
+  function moveBlob(a) {
+    if (!a || !a.offsetWidth) return;
+    const w = a.offsetWidth - 4, h = a.offsetHeight, x = a.offsetLeft + 2, y = a.offsetTop;
+    blobs.forEach(b => {
+      b.style.width = w + 'px';
+      b.style.height = h + 'px';
+      b.style.transform = 'translate(' + x + 'px,' + y + 'px)';
+    });
+    if (!blobReady) {
+      blobReady = true;
+      requestAnimationFrame(() => requestAnimationFrame(() => nav.classList.add('pn-blob-on')));
+    }
+  }
 
   if (typeof V !== 'undefined') {
     V.categories = () => V.genres().replace('<h1 class="ph">Genres</h1>', '<h1 class="ph">Categories</h1>');
@@ -82,6 +106,7 @@
       if (a.dataset.pnTab === key) a.setAttribute('aria-current','page');
       else a.removeAttribute('aria-current');
     });
+    moveBlob(nav.querySelector('[aria-current="page"]'));
     const notice = document.getElementById('pdiNotificationWidget');
     if (notice && route !== 'watch') notice.style.bottom = 'calc(78px + env(safe-area-inset-bottom, 0px))';
   }
@@ -114,6 +139,8 @@
     if (target) target.innerHTML = rows.length ? grid(rows) : '<p class="mu">No anime, studio or voice credit found. Try another search.</p>';
   });
   window.addEventListener('hashchange',() => setTimeout(syncNav,0));
+  window.addEventListener('resize',() => moveBlob(nav.querySelector('[aria-current="page"]')));
+  window.addEventListener('load',() => moveBlob(nav.querySelector('[aria-current="page"]')));
   const app = document.getElementById('app');
   if (app && 'MutationObserver' in window) new MutationObserver(syncNav).observe(app,{childList:true});
   syncNav();
