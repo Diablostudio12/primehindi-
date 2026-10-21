@@ -1,8 +1,13 @@
 // Client-side SEO helpers for the Prime Hindi SPA (loaded after the app).
 // 1) Image alt text: gives every meaningful image a descriptive alt, including the ones
 //    drawn later by other feature scripts. Purely decorative images get alt="".
+// 2) Lazy loading: every image that is not in the header, hero, player or preloader gets
+//    loading="lazy" + decoding="async" (the templates already carry them where it matters).
 (function () {
   "use strict";
+
+  // Above-the-fold / critical images must never be lazy.
+  var CRITICAL = "header, .hero, #hero, .hs, .pl, #ph-preloader, #headerBrandLogo, .dx-poster, .profile-avatar-wrap";
 
   function altFor(img) {
     var box = img.closest("a, article, li, .cd, .voice-cast-card, .ep-card");
@@ -23,16 +28,36 @@
     if (!t) img.setAttribute("role", "presentation");
   }
 
+  function fixLazy(img) {
+    if (!img.hasAttribute("decoding")) img.setAttribute("decoding", "async");
+    if (img.hasAttribute("loading")) return;
+    if (img.closest(CRITICAL)) return;
+    img.setAttribute("loading", "lazy");
+  }
+
+  function fix(img) {
+    fixAlt(img);
+    fixLazy(img);
+  }
+
   function scan(root) {
     var list = (root.querySelectorAll ? root.querySelectorAll("img") : []);
-    for (var i = 0; i < list.length; i++) fixAlt(list[i]);
-    if (root.tagName === "IMG") fixAlt(root);
+    for (var i = 0; i < list.length; i++) fix(list[i]);
+    if (root.tagName === "IMG") fix(root);
   }
 
   function start() {
     scan(document);
     var pending = false;
-    new MutationObserver(function () {
+    new MutationObserver(function (muts) {
+      // Apply lazy loading as early as possible to freshly inserted images.
+      for (var i = 0; i < muts.length; i++) {
+        var added = muts[i].addedNodes;
+        for (var j = 0; j < added.length; j++) {
+          var n = added[j];
+          if (n.nodeType === 1) { if (n.tagName === "IMG") fixLazy(n); else if (n.querySelectorAll) { var l = n.querySelectorAll("img"); for (var k = 0; k < l.length; k++) fixLazy(l[k]); } }
+        }
+      }
       if (pending) return;
       pending = true;
       setTimeout(function () { pending = false; scan(document); }, 150);
