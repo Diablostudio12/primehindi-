@@ -110,6 +110,8 @@ body{background:radial-gradient(1000px 520px at 100% -10%,#3a2a8a40,transparent 
 .ph-meter .bar div{height:100%;border-radius:9px}
 .ph-empty{color:var(--muted);font-size:12px;padding:14px 0;text-align:center}
 #phBottom{display:none}
+/* Mobile More/sidebar drawer: keep scrolling inside the drawer, not the page behind it. */
+@media(max-width:700px){body.ph-sidebar-open{overflow:hidden!important;overscroll-behavior:none;touch-action:none}#sidebar.open{height:100dvh;max-height:100dvh;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;touch-action:pan-y;-webkit-overflow-scrolling:touch}#sidebar.open .nav{flex:0 0 auto}}
 @media(max-width:1100px){.ph-g21{grid-template-columns:1fr}.ph-g3{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:950px){.ph-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:700px){
@@ -191,6 +193,21 @@ body{background:radial-gradient(1000px 520px at 100% -10%,#3a2a8a40,transparent 
   function syncBar() {
     var cur = document.querySelector('#sidebar button.active'); var t = cur ? cur.dataset.tab : '';
     bar.querySelectorAll('button').forEach(function (b) { b.classList.toggle('on', b.dataset.b === t); });
+  }
+
+  /* Lock background scrolling while the mobile More drawer is open. */
+  var side = $('sidebar');
+  function syncSidebarScroll() {
+    var open = !!(side && side.classList.contains('open') && window.matchMedia('(max-width: 700px)').matches);
+    document.body.classList.toggle('ph-sidebar-open', open);
+  }
+  if (side) {
+    new MutationObserver(syncSidebarScroll).observe(side, { attributes: true, attributeFilter: ['class'] });
+    side.addEventListener('touchmove', function (e) {
+      if (side.classList.contains('open') && e.target.closest('#sidebar')) e.stopPropagation();
+    }, { passive: true });
+    window.addEventListener('resize', syncSidebarScroll);
+    syncSidebarScroll();
   }
 
   /* ---------- chart helpers ---------- */
