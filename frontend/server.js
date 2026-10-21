@@ -3,6 +3,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { createSeo } from "./seo.js";
+import { patchIndexHtml } from "./seo-patches.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -131,6 +132,8 @@ function servePage(file, scripts, decorate) {
             /(footer:before\{right:clamp\(0px,calc\(\(100vw - 1200px\)\/2\),90px\)\})(\r?\n\/\* Header branding: larger logo with no clipping \*\/)/,
             "$1}$2"
           );
+          // SEO round 2: alt text etc. (see seo-patches.js)
+          html = patchIndexHtml(html);
         }
         const tags = scripts.map((s) => '<script src="' + s + '"></script>').join("");
         const i = html.lastIndexOf("</body>");
@@ -156,7 +159,7 @@ function servePage(file, scripts, decorate) {
     }
   };
 }
-const homePage = servePage("index.html", ["/studios.js", "/details-redesign.js", "/hero-desktop.js", "/watch-panel.js", "/home-discovery.js", "/download-button.js"], seo.decorate);
+const homePage = servePage("index.html", ["/studios.js", "/details-redesign.js", "/hero-desktop.js", "/watch-panel.js", "/home-discovery.js", "/download-button.js", "/seo-enhance.js"], seo.decorate);
 
 // Real, indexable paths for the hash-routed SPA (a tiny inline script in the page maps them to #/ routes).
 app.get(["/", "/index.html", "/anime/:id", "/anime/:id/:slug", "/watch/:id", "/watch/:id/:ep"], homePage);
@@ -200,7 +203,7 @@ app.get(["/accept-invite", "/accept-invite.html"], (req, res) => {
 // Do not expose server source / package files / source maps through static hosting.
 // 404.html is only ever served as the response of the 404 handler below.
 app.use((req, res, next) => {
-  if (/^\/(server\.js|seo\.js|404(\.html)?|package(-lock)?\.json)$/i.test(req.path) || /\.map$/i.test(req.path)) return res.sendStatus(404);
+  if (/^\/(server|seo|seo-patches|seo-config|pages|img-proxy)\.js$/i.test(req.path) || /^\/(404(\.html)?|package(-lock)?\.json)$/i.test(req.path) || /\.map$/i.test(req.path)) return res.sendStatus(404);
   next();
 });
 
