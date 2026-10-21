@@ -221,8 +221,8 @@ header a.ph-brand img#headerBrandLogo{
 @media(max-width:360px){.profile-shortcut{gap:7px;padding:10px}.profile-shortcut-icon{width:30px;height:30px}.profile-shortcut small{font-size:9px}.profile-library-grid a{padding:10px;gap:7px}}
 
 
-/* Watch-page active controls use the same blue as Next episode. */
-.watch-blue-active{background:#2F6BFF!important;border-color:#2F6BFF!important;color:#fff!important;box-shadow:none!important}
+/* Active episode tab and All filter match the Next episode blue button. */
+body .watch-blue-active{background:#2F6BFF!important;background-image:none!important;border-color:#2F6BFF!important;color:#fff!important;box-shadow:none!important}
 
 </style></head><body>
 <header><a href="#/" class="lg ph-brand" aria-label="primehindi home"><img id="headerBrandLogo" class="header-brand-logo" alt="primehindi logo" style="display:none"></a>
@@ -299,13 +299,13 @@ if ("serviceWorker" in navigator) {
 }
 </script><script src="/manga-section.js"></script><script src="/bottom-nav.js"></script>
 <script>
-/* Keep the active Episodes tab and All filter consistent with the Next episode button. */
+/* Apply the blue active state to the actual rendered episode tab and All filter. */
 (function(){
   function syncWatchButtonColors(){
-    var root=document.querySelector('main')||document.body;
-    root.querySelectorAll('button,a,[role="button"]').forEach(function(el){
-      var label=(el.innerText||el.textContent||'').replace(/\\s+/g,' ').trim();
-      if(/^Episodes\\s*\\(\\d+\\)$/i.test(label) || label==='All'){
+    document.querySelectorAll('body *').forEach(function(el){
+      if(el.children.length>0) return;
+      var label=(el.innerText||el.textContent||'').replace(/\s+/g,' ').trim();
+      if(/^Episodes\s*\(\d+\)$/i.test(label) || label==='All'){
         el.classList.add('watch-blue-active');
       }
     });
