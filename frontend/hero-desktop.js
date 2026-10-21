@@ -18,7 +18,7 @@
     '.pn-hs:focus-within{border-color:var(--ac);box-shadow:0 0 0 3px rgba(47,107,255,.2)}.pn-hs svg{flex:0 0 auto}}',
     /* account avatar */
     '.signin-btn.account-signed-in{display:inline-flex;align-items:center;gap:8px;padding:4px 12px 4px 4px;border-radius:999px;background:var(--cd);border:1px solid var(--ln);color:var(--tx)}',
-    '.pn-av{width:30px;height:30px;flex:0 0 auto;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,#7c5cff,#2f6bff);color:#fff;font:700 14px Sora,Inter,sans-serif}',
+    '.pn-av{width:30px;height:30px;flex:0 0 auto;border-radius:50%;display:grid;place-items:center;overflow:hidden;background:linear-gradient(135deg,#7c5cff,#2f6bff);color:#fff;font:700 14px Sora,Inter,sans-serif}.pn-av img{display:block;width:100%;height:100%;object-fit:cover;border-radius:inherit}',
     '.pn-an{max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}',
     '@media(max-width:699px){.pn-an{display:none}.signin-btn.account-signed-in{padding:4px;max-width:none!important}}',
     /* notifications docked in header */
@@ -248,9 +248,11 @@
   function decorateAccount() {
     var b = document.getElementById('accountBtn');
     if (!b || !b.classList.contains('account-signed-in')) return;
-    var name = 'My Profile';
-    try { var u = JSON.parse(localStorage.getItem('pdi_stream_user') || '{}'); name = u.display_name || u.displayName || name; } catch (e) {}
-    b.innerHTML = '<span class="pn-av">' + esc(String(name).charAt(0).toUpperCase()) + '</span><span class="pn-an">' + esc(name) + '</span>';
+    var name = 'My Profile', avatar = '';
+    try { var u = JSON.parse(localStorage.getItem('pdi_stream_user') || '{}'); name = u.display_name || u.displayName || name; avatar = u.avatarUrl || u.avatar_url || u.photoURL || u.picture || ''; } catch (e) {}
+    var initial = esc(String(name).trim().charAt(0).toUpperCase() || 'P');
+    var avatarMarkup = avatar ? '<span class="pn-av"><img src="' + esc(avatar) + '" alt="" referrerpolicy="no-referrer" onerror="this.parentNode.textContent=this.dataset.initial" data-initial="' + initial + '"></span>' : '<span class="pn-av">' + initial + '</span>';
+    b.innerHTML = avatarMarkup + '<span class="pn-an">' + esc(name) + '</span>';
     b.title = name;
   }
   if (typeof window.syncAccountButton === 'function') {
