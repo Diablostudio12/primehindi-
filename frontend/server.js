@@ -3,7 +3,8 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { createSeo } from "./seo.js";
-import { patchIndexHtml } from "./seo-patches.js";
+import { patchIndexHtml, patchScript } from "./seo-patches.js";
+import { registerImgProxy } from "./img-proxy.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -56,6 +57,9 @@ app.get("/sitemap.xml", (req, res) => {
 });
 // 301 to the canonical page URL (/index.html -> /, /anime/ID -> /anime/ID/slug, /watch/ID -> /watch/ID/1).
 app.use(seo.redirects);
+
+// #12: resized WebP versions of catalog images (/img?u=...&w=...).
+registerImgProxy(app, { backendUrl, secret: PROXY_SECRET });
 
 app.use("/api", async (req, res) => {
   try {
@@ -132,7 +136,7 @@ function servePage(file, scripts, decorate) {
             /(footer:before\{right:clamp\(0px,calc\(\(100vw - 1200px\)\/2\),90px\)\})(\r?\n\/\* Header branding: larger logo with no clipping \*\/)/,
             "$1}$2"
           );
-          // SEO round 2: alt text etc. (see seo-patches.js)
+          // SEO round 2: alt text, lazy loading, WebP (see seo-patches.js)
           html = patchIndexHtml(html);
         }
         const tags = scripts.map((s) => '<script src="' + s + '"></script>').join("");
@@ -174,13 +178,28 @@ let heroJs = null;
 app.get("/hero-desktop.js", (req, res, next) => {
   try {
     if (heroJs === null) {
-      heroJs = fs
-        .readFileSync(path.join(__dirname, "hero-desktop.js"), "utf8")
-        .replace("max-width:1480px;padding-left:0;padding-right:0;box-sizing:border-box}", "max-width:1480px;box-sizing:border-box}")
-        .replace("z-index:5;background:rgba(255,255,255,.1)}", "z-index:5;opacity:0;pointer-events:none;background:rgba(255,255,255,.1)}");
+      heroJs = patchScript(
+        "hero-desktop.js",
+        fs
+          .readFileSync(path.join(__dirname, "hero-desktop.js"), "utf8")
+          .replace("max-width:1480px;padding-left:0;padding-right:0;box-sizing:border-box}", "max-width:1480px;box-sizing:border-box}")
+          .replace("z-index:5;background:rgba(255,255,255,.1)}", "z-index:5;opacity:0;pointer-events:none;background:rgba(255,255,255,.1)}")
+      );
     }
     res.set("Cache-Control", "no-cache");
     res.type("application/javascript").send(heroJs);
+  } catch (error) {
+    next();
+  }
+});
+
+// Home sections script: same file, with catalog posters served through /img (WebP).
+let discoveryJs = null;
+app.get("/home-discovery.js", (req, res, next) => {
+  try {
+    if (discoveryJs === null) discoveryJs = patchScript("home-discovery.js", fs.readFileSync(path.join(__dirname, "home-discovery.js"), "utf8"));
+    res.set("Cache-Control", "no-cache");
+    res.type("application/javascript").send(discoveryJs);
   } catch (error) {
     next();
   }
