@@ -110,8 +110,8 @@ body{background:radial-gradient(1000px 520px at 100% -10%,#3a2a8a40,transparent 
 .ph-meter .bar div{height:100%;border-radius:9px}
 .ph-empty{color:var(--muted);font-size:12px;padding:14px 0;text-align:center}
 #phBottom{display:none}
-/* Mobile More/sidebar drawer: keep scrolling inside the drawer, not the page behind it. */
-@media(max-width:700px){body.ph-sidebar-open{overflow:hidden!important;overscroll-behavior:none;touch-action:none}#sidebar.open{height:100dvh;max-height:100dvh;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;touch-action:pan-y;-webkit-overflow-scrolling:touch}#sidebar.open .nav{flex:0 0 auto}}
+/* Mobile More/sidebar drawer: lock the document while keeping the drawer scrollable. */
+@media(max-width:700px){body.ph-sidebar-open{overflow:hidden!important;overscroll-behavior:none}#sidebar.open{position:fixed;top:0;bottom:0;height:100dvh;max-height:100dvh;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;touch-action:pan-y;-webkit-overflow-scrolling:touch;z-index:1000}#sidebar.open .nav{flex:0 0 auto}}
 @media(max-width:1100px){.ph-g21{grid-template-columns:1fr}.ph-g3{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:950px){.ph-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:700px){
@@ -195,11 +195,32 @@ body{background:radial-gradient(1000px 520px at 100% -10%,#3a2a8a40,transparent 
     bar.querySelectorAll('button').forEach(function (b) { b.classList.toggle('on', b.dataset.b === t); });
   }
 
-  /* Lock background scrolling while the mobile More drawer is open. */
+  /* Lock background scroll position while the mobile More drawer is open. */
   var side = $('sidebar');
+  var lockedScrollY = 0;
+  var sidebarScrollLocked = false;
   function syncSidebarScroll() {
     var open = !!(side && side.classList.contains('open') && window.matchMedia('(max-width: 700px)').matches);
-    document.body.classList.toggle('ph-sidebar-open', open);
+    var body = document.body;
+    if (open && !sidebarScrollLocked) {
+      lockedScrollY = window.scrollY || window.pageYOffset || 0;
+      sidebarScrollLocked = true;
+      body.classList.add('ph-sidebar-open');
+      body.style.position = 'fixed';
+      body.style.top = '-' + lockedScrollY + 'px';
+      body.style.left = '0';
+      body.style.right = '0';
+      body.style.width = '100%';
+    } else if (!open && sidebarScrollLocked) {
+      sidebarScrollLocked = false;
+      body.classList.remove('ph-sidebar-open');
+      body.style.position = '';
+      body.style.top = '';
+      body.style.left = '';
+      body.style.right = '';
+      body.style.width = '';
+      window.scrollTo(0, lockedScrollY);
+    }
   }
   if (side) {
     new MutationObserver(syncSidebarScroll).observe(side, { attributes: true, attributeFilter: ['class'] });
