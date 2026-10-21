@@ -220,6 +220,10 @@ header a.ph-brand img#headerBrandLogo{
 @media(max-width:520px){.profile-page{padding-top:2px}.profile-heading{margin:20px 0 17px}.profile-identity{align-items:flex-start;flex-wrap:wrap;padding:17px;border-radius:18px;gap:14px}.profile-avatar-wrap{width:60px;height:60px}.profile-avatar-fallback{font-size:26px}.profile-identity-main{gap:11px;width:100%}.profile-identity-copy h2{font-size:18px}.profile-edit-btn{width:100%;justify-content:center}.profile-shortcuts{gap:9px}.profile-shortcut{padding:12px;gap:9px;border-radius:14px;align-items:flex-start}.profile-shortcut-icon{width:34px;height:34px;border-radius:10px;font-size:19px}.profile-shortcut strong{font-size:11px;line-height:1.4}.profile-shortcut small{font-size:10px}.profile-shortcut>b{font-size:20px}.profile-form{padding:16px;border-radius:17px}.profile-section-title h2,.profile-library-heading h2{font-size:16px}.profile-library-grid{gap:9px}.profile-library-grid a{padding:12px;gap:8px}.profile-library-icon{width:34px;height:34px;font-size:18px}.profile-library-grid strong{font-size:11px}.profile-library-grid small{font-size:10px}.profile-form-actions{grid-template-columns:1fr}.profile-form-actions .btn{width:100%}}
 @media(max-width:360px){.profile-shortcut{gap:7px;padding:10px}.profile-shortcut-icon{width:30px;height:30px}.profile-shortcut small{font-size:9px}.profile-library-grid a{padding:10px;gap:7px}}
 
+
+/* Watch-page active controls use the same blue as Next episode. */
+.watch-blue-active{background:#2F6BFF!important;border-color:#2F6BFF!important;color:#fff!important;box-shadow:none!important}
+
 </style></head><body>
 <header><a href="#/" class="lg ph-brand" aria-label="primehindi home"><img id="headerBrandLogo" class="header-brand-logo" alt="primehindi logo" style="display:none"></a>
 <nav><a href="#/">Home</a><a href="#/genres">Genres</a><a href="#/manga">Manga</a><a href="#/schedule">Schedule</a><a href="#/watchlist">Watchlist</a></nav><span class="sp"></span>
@@ -293,4 +297,22 @@ let heroTimer=null;function startHeroSlider(){if(heroTimer)clearInterval(heroTim
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => { navigator.serviceWorker.register("/sw.js").catch(() => {}); });
 }
-</script><script src="/manga-section.js"></script><script src="/bottom-nav.js"></script></body></html>
+</script><script src="/manga-section.js"></script><script src="/bottom-nav.js"></script>
+<script>
+/* Keep the active Episodes tab and All filter consistent with the Next episode button. */
+(function(){
+  function syncWatchButtonColors(){
+    var root=document.querySelector('main')||document.body;
+    root.querySelectorAll('button,a,[role="button"]').forEach(function(el){
+      var label=(el.innerText||el.textContent||'').replace(/\\s+/g,' ').trim();
+      if(/^Episodes\\s*\\(\\d+\\)$/i.test(label) || label==='All'){
+        el.classList.add('watch-blue-active');
+      }
+    });
+  }
+  syncWatchButtonColors();
+  new MutationObserver(syncWatchButtonColors).observe(document.body,{childList:true,subtree:true,characterData:true});
+})();
+</script>
+
+</body></html>
