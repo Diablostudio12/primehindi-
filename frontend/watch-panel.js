@@ -62,7 +62,7 @@ function run(){
  var side=wt.querySelector('.eps');side=side&&side.parentNode;
  if(side&&side.parentNode===wt)side.remove();
  wt.style.gridTemplateColumns='1fr';
- var season=Number(m[3])||Number(((a.episodes||[]).find(function(x){return Number(x.episodeNumber!=null?x.episodeNumber:x.episode_number)===(+m[2]||1);})||{}).seasonNumber)||Number(((a.episodes||[]).find(function(x){return Number(x.episodeNumber!=null?x.episodeNumber:x.episode_number)===(+m[2]||1);})||{}).season_number)||1;
+ var season=Number(m[3])||1;
  var box=document.createElement('div');box.innerHTML=build(a,+m[2]||1,season);
  var p=box.firstChild;wt.insertAdjacentElement('afterend',p);wire(p);var en=+m[2]||1,ee=(a.episodes||[]).find(function(x){return Number(x.episodeNumber!=null?x.episodeNumber:x.episode_number)===en&&(Number(x.seasonNumber!=null?x.seasonNumber:x.season_number)||1)===season});engage(p,a,ee&&ee.id?Number(ee.id):null,en);
 }
